@@ -78,8 +78,8 @@ static const uint32_t HOST_K[64] = {
 #define ROTR32(x,n)  (((x)>>(n))|((x)<<(32-(n))))
 #define SIG0(x)  (ROTR32(x,2)^ROTR32(x,13)^ROTR32(x,22))
 #define SIG1(x)  (ROTR32(x,6)^ROTR32(x,11)^ROTR32(x,25))
-#define sig0(x)  (ROTR32(x,7)^ROTR32(x,18)|((x)>>3))
-#define sig1(x)  (ROTR32(x,17)^ROTR32(x,19)|((x)>>10))
+#define sig0(x)  (ROTR32(x,7)^ROTR32(x,18)^((x)>>3))
+#define sig1(x)  (ROTR32(x,17)^ROTR32(x,19)^((x)>>10))
 #define CH(e,f,g)  (((e)&(f))^((~(e))&(g)))
 #define MAJ(a,b,c) (((a)&(b))^((a)&(c))^((b)&(c)))
 
