@@ -158,10 +158,17 @@ __device__ uint32_t eval_differential_mod(
  * KERNEL: Test p-adic height for each seed
  *
  * Each thread:
- *   1. Uses seed to derive initial DW (1-bit per coordinate from seed bits)
+ *   1. Uses xorshift64 PRNG to generate full 32-bit DW[0..15]
  *   2. Checks Sol_1: F(DW) ≡ 0 mod 2 for all 15 components
  *   3. If in Sol_1: greedily lifts to Sol_2, Sol_3, ..., Sol_{max_k}
  *   4. Records maximum height achieved
+ *
+ * Greedy Hensel lifting (Sol_k -> Sol_{k+1}):
+ *   We have DW in Sol_k (F(DW) ≡ 0 mod 2^k).
+ *   To lift, try flipping bit k (= 2^k) of each DW[i] independently.
+ *   Keep the flip that maximises the number of satisfied components
+ *   of F(DW) ≡ 0 mod 2^{k+1}.
+ *   After one greedy pass over all 16 coordinates, check if fully lifted.
  * ============================================================ */
 #define MAX_HEIGHT 32
 
@@ -169,79 +176,80 @@ __global__ void p_adic_tower_kernel(
         uint64_t  n_seeds,
         uint64_t  seed_base,
         uint32_t  max_k,
-        uint32_t* d_height_counts,   /* histogram: [0..max_k] */
+        uint32_t* d_height_counts,   /* histogram: [0..MAX_HEIGHT] */
         uint32_t* d_sol1_count,
         uint64_t* d_best_seed)       /* seed achieving max height */
 {
     uint64_t idx = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= n_seeds) return;
 
-    /* Derive seed */
     uint64_t seed = seed_base + idx;
 
-    /* --- Generate initial DW from seed (1-bit per 16 coords) ---
-     * DW[i] = low bit of (seed >> i)  for i=0..15
-     * This gives DW in {0,1}^16 — the Sol_1 search space.
-     */
-    uint32_t DW[16];
-    uint32_t W0_seed = (uint32_t)(seed >> 32) ^ (uint32_t)seed;
-    for (int i = 0; i < 16; i++)
-        DW[i] = (uint32_t)((seed >> i) & 1u);
+    /* xorshift64 for good bit distribution across all 32 bits of DW */
+    uint64_t s = seed ^ 0xdeadbeefcafeULL;
+    s ^= s << 13; s ^= s >> 7; s ^= s << 17;
+    uint32_t W0_seed = (uint32_t)(s ^ (s >> 32));
 
-    /* --- Check Sol_1: all 15 components of F(DW) even --- */
+    uint32_t DW[16];
+    for (int i = 0; i < 16; i++) {
+        s ^= s << 13; s ^= s >> 7; s ^= s << 17;
+        DW[i] = (uint32_t)(s ^ (s >> 32));
+    }
+
+    /* --- Check Sol_1: all 15 components of F(DW) ≡ 0 mod 2 --- */
     uint32_t bits_set = eval_differential_mod(W0_seed, DW, 1);
-    /* bits_set: bit k-3 = 1 if De_k ≡ 0 mod 2 */
-    /* We need De3..De17 all 0 mod 2 → bits 0..14 all set */
     if ((bits_set & 0x7FFFu) != 0x7FFFu) {
-        /* Not in Sol_1 — no height */
         atomicAdd(&d_height_counts[0], 1u);
         return;
     }
 
-    /* In Sol_1! */
+    /* In Sol_1 */
     atomicAdd(d_sol1_count, 1u);
 
-    /* --- Greedy lifting from Sol_1 to Sol_{max_k} ---
-     * At each step k (lifting to Sol_{k+1}):
-     *   For each coordinate i=0..15:
-     *     Try DW[i] and DW[i] + 2^k
-     *     Keep whichever gives all 15 components of F(DW) ≡ 0 mod 2^{k+1}
+    /* --- Greedy Hensel lifting: Sol_1 -> Sol_2 -> ... -> Sol_{max_k} ---
+     *
+     * KEY: when lifting from Sol_k to Sol_{k+1}, we explore DW + 2^k * c
+     * for c ∈ {0,1}^16.  The bit to flip is bit k (0-indexed) = 2^k.
+     *
+     * FIX vs old code: bit_k = (1u << k), NOT (1u << (k-1)).
+     * The old formula flipped bit (k-1) which destroyed the Sol_k property.
      */
-    int height = 1; /* already in Sol_1 */
-    for (uint32_t k = 1; k <= max_k && k < MAX_HEIGHT; k++) {
-        uint32_t DW_try[16];
-        uint32_t bit_k = 1u << (k - 1);  /* 2^{k-1}: the bit to try flipping */
+    int height = 1;
+    for (uint32_t k = 1; k < max_k && k < (uint32_t)MAX_HEIGHT; k++) {
+        /* Bit to flip for Hensel lifting from level k to k+1 */
+        uint32_t bit_k = 1u << k;   /* 2^k */
 
-        /* Make a copy */
+        uint32_t DW_try[16];
         for (int i = 0; i < 16; i++) DW_try[i] = DW[i];
 
-        /* Greedy: for each coordinate, choose the value that satisfies mod 2^{k+1} */
-        int lifted = 1;
-        for (int i = 0; i < 16 && lifted; i++) {
-            /* Try DW[i] as-is */
-            uint32_t r0 = eval_differential_mod(W0_seed, DW_try, k+1);
-            if ((r0 & 0x7FFFu) == 0x7FFFu) continue; /* coordinate already OK */
+        /* Greedy pass: for each coordinate choose the flip that maximises
+         * the number of satisfied components of F ≡ 0 mod 2^{k+1}.
+         * NOTE: we do NOT abort inside the loop — a single coordinate flip
+         * generally cannot satisfy all 15 components simultaneously.
+         * We only check the full system AFTER the complete greedy pass. */
+        for (int i = 0; i < 16; i++) {
+            uint32_t r0 = eval_differential_mod(W0_seed, DW_try, (int)(k + 1));
+            int cnt0 = __popc(r0 & 0x7FFFu);
 
-            /* Try DW[i] + bit_k */
             DW_try[i] ^= bit_k;
-            uint32_t r1 = eval_differential_mod(W0_seed, DW_try, k+1);
-            if ((r1 & 0x7FFFu) == 0x7FFFu) continue; /* flipped version works */
+            uint32_t r1 = eval_differential_mod(W0_seed, DW_try, (int)(k + 1));
+            int cnt1 = __popc(r1 & 0x7FFFu);
 
-            /* Neither works: greedy fails at this coordinate */
-            DW_try[i] ^= bit_k; /* restore */
-            lifted = 0;
+            /* Keep the flip only if it strictly improves satisfaction count */
+            if (cnt0 >= cnt1)
+                DW_try[i] ^= bit_k;  /* restore: unflipped was at least as good */
         }
 
-        if (!lifted) break; /* can't lift to Sol_{k+1} */
+        /* Check whether the greedy pass achieved a full lift */
+        uint32_t final_r = eval_differential_mod(W0_seed, DW_try, (int)(k + 1));
+        if ((final_r & 0x7FFFu) != 0x7FFFu)
+            break;  /* greedy failed to lift to Sol_{k+1} */
 
-        /* Successfully lifted */
-        height = k + 1;
+        height = (int)(k + 1);
         for (int i = 0; i < 16; i++) DW[i] = DW_try[i];
 
-        /* Track best seed */
-        if (height >= (int)max_k) {
+        if (height >= (int)max_k)
             atomicMax((unsigned long long*)d_best_seed, (unsigned long long)seed);
-        }
     }
 
     atomicAdd(&d_height_counts[height], 1u);
@@ -258,6 +266,7 @@ int main(int argc, char* argv[]) {
     if (argc > 1) n_seeds  = (uint64_t)strtoull(argv[1], NULL, 10);
     if (argc > 2) max_k    = (uint32_t)atoi(argv[2]);
     if (argc > 3) outfile  = argv[3];
+    if (max_k >= (uint32_t)MAX_HEIGHT) max_k = (uint32_t)MAX_HEIGHT - 1;
 
     printf("=== SHA-256 p-Adic Tower Height Test ===\n");
     printf("Seeds     = %llu\n", (unsigned long long)n_seeds);
@@ -279,7 +288,7 @@ int main(int argc, char* argv[]) {
 
     const int    BLOCK_SIZE = 256;
     const uint64_t CHUNK    = (1ULL << 22);  /* 4M seeds per launch */
-    uint64_t seed_base      = (uint64_t)time(NULL) << 20;
+    uint64_t seed_base      = (uint64_t)(unsigned)time(NULL) * 6364136223846793005ULL + 1442695040888963407ULL;
 
     clock_t t0 = clock();
 
