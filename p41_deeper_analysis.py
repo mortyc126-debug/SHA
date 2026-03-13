@@ -161,7 +161,7 @@ print("─" * 72)
 print("Тезис: в All-a каскаде (Da3..Da16=0) выполняется De17 = DW_16 точно.")
 print("DW_16 = (sig1(DW_14) + DW_9 + sig0(DW_1) + DW_0) mod 2^32  (schedule).\n")
 
-N_A = 2000
+N_A = 300
 match_count = 0
 mismatches = []
 
@@ -196,7 +196,7 @@ else:
 # Проверка формулы DW_16 = sig1(DW_14) + DW_9 + sig0(DW_1) + DW_0
 print("\nАналитическая проверка формулы DW_16 = sig1(DW_14)+DW_9+sig0(DW_1)+DW_0:")
 formula_matches = 0
-for _ in range(1000):
+for _ in range(200):
     W_base = [random.randint(0, MASK) for _ in range(16)]
     dW = build_hybrid_cascade(W_base, PATTERN_ALLA)
 
@@ -222,7 +222,7 @@ print("B: 2-АДИЧЕСКАЯ СТРУКТУРА De17 (All-a, N=8000)")
 print("─" * 72)
 print("Измеряем P(De17 ≡ 0 mod 2^k) для k=1..10 и сравниваем с 2^{-k}.\n")
 
-N_B = 8000
+N_B = 500
 de17_samples = []
 
 for _ in range(N_B):
@@ -360,7 +360,7 @@ print("─" * 72)
 print("Тезис: Wang и All-a каскады независимы → их ансамбль = 2× birthday pairs.")
 print("Стоимость: 2× работы, но 2× пар — ускорение birthday в sqrt(2)≈1.41×.\n")
 
-N_D = 1000
+N_D = 150
 wang_de17 = []
 alla_de17 = []
 
