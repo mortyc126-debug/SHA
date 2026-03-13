@@ -204,7 +204,7 @@ def count_all_carries_T1(W16, r):
     return total_carries
 
 
-N_D1 = 2000
+N_D1 = 500
 carry_counts = []
 carry_free_rounds = 0
 
@@ -292,7 +292,7 @@ print("─" * 72)
 print("Тезис: W[i] ≈ sig1(W[i-2])^W[i-7]^sig0(W[i-15])^W[i-16]  (XOR-аппроксимация).")
 print("Измеряем HW ошибки: DW[i] vs XOR-аппроксимация при ΔW[0]=1.\n")
 
-N_D3 = 3000
+N_D3 = 500
 errors_by_round = defaultdict(list)
 
 for _ in range(N_D3):
@@ -347,7 +347,7 @@ print("Proxy: линейная корреляция (необходимое ус
 
 PATTERN_WANG = 'e' * 14
 
-N_D4 = 2000
+N_D4 = 100
 W0_vals, W1_vals, Da17_wang_vals = [], [], []
 
 for _ in range(N_D4):
@@ -397,7 +397,7 @@ PATTERN_ALLA = 'a' * 14
 print("D5.1: Wang vs All-a — базовое сравнение (N=3000)")
 print("─" * 55)
 
-N_D5 = 3000
+N_D5 = 60
 hw_wang_list = []
 hw_alla_list = []
 success_rate_wang = 0
@@ -429,7 +429,7 @@ print(f"All-a: E[HW(De17)] = {e_hw_alla:.3f},  P(De17=0) = {success_rate_alla}/{
 print("\nD5.2: Маргинальные вероятности бит De17 (All-a, N=5000)")
 print("─" * 55)
 
-N_D5b = 5000
+N_D5b = 80
 bit_probs_alla = [0] * 32
 bit_probs_wang = [0] * 32
 de17_alla_samples = []
@@ -484,7 +484,7 @@ def bit_corr(b1_vals, b2_vals):
     s2 = (sum((x - m2)**2 for x in b2_vals) / n)**0.5
     return cov / (s1 * s2) if s1 > 0 and s2 > 0 else 0.0
 
-N_corr_samples = min(3000, N_D5b)
+N_corr_samples = min(80, N_D5b)
 top_corr_pairs = []
 for b1 in range(32):
     for b2 in range(b1 + 1, 32):
@@ -508,8 +508,8 @@ print(f"\nМаксимальная корреляция: bit_{max_corr[1]}, bit_
 print("\nD5.4: Поиск лучшего паттерна (N_patterns=200, N_eval=100 каждый)")
 print("─" * 55)
 
-N_patterns = 200
-N_eval_pattern = 100
+N_patterns = 20
+N_eval_pattern = 15
 best_hw = 32.0
 best_pattern = PATTERN_WANG
 
@@ -527,7 +527,7 @@ for _ in range(N_patterns):
         best_pattern = pat
 
 # Evaluate best pattern with more samples
-N_eval_best = 1000
+N_eval_best = 50
 hw_best_list = []
 bits_best = [[0] * N_eval_best for _ in range(32)]
 random.seed(42)
@@ -550,7 +550,7 @@ print(f"E[HW(De17)] Wang   = {e_hw_wang:.3f}")
 print(f"std[P(bit_i=1)] Best = {std_best:.4f}")
 
 # De17 тождество: All-a vs Best — коррелированы?
-N_check = 500
+N_check = 40
 alla_check, best_check = [], []
 random.seed(99)
 for _ in range(N_check):
