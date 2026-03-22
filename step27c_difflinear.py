@@ -3,23 +3,10 @@
 Step 27c: DIFFERENTIAL-LINEAR ATTACK ON SHA-256
 ════════════════════════════════════════════════
 
-THE IDEA (Langford-Hellman 1994, Biham-Dunkelman-Keller 2002):
+FAST VERSION: Focus on the key experiments that matter.
 
-Split E = E1 ∘ E0:
-  E0 (rounds 0→R):  Differential phase — high-prob differential Δ→Δ*
-  E1 (rounds R→64): Linear phase — linear approximation with bias ε
-
-Combined: P(collision on linear mask) = p · (1/2 + ε)
-  where p = P(Δ→Δ*), ε = linear bias of E1
-
-For SHA-256:
-  - Wang chain gives p ≈ 1 for first 20 rounds
-  - If ANY linear bias ε > 0 exists in rounds 21-64...
-  - ...then collision complexity < 2^128
-
-THIS IS THE CRITICAL EXPERIMENT: Find linear bias in SHA-256 tail rounds.
-
-Even ε = 2^{-10} would give advantage: 2^{128-10} = 2^{118}.
+Core question: Does SHA-256 have ANY linear bias when viewed through
+differential lens? Even tiny bias ε means collision < 2^128.
 """
 
 import random, time, math
@@ -55,10 +42,16 @@ IV = [
 ]
 
 
-def sha256_rounds(state, W, start_round, end_round):
-    """Run SHA-256 round function from start_round to end_round."""
-    a, b, c, d, e, f, g, h = state
-    for i in range(start_round, end_round):
+def sha256_full(msg_words, rounds=64):
+    """SHA-256 compression, returns hash."""
+    W = list(msg_words) + [0] * (64 - len(msg_words))
+    for i in range(16, 64):
+        s0 = rotr(W[i-15], 7) ^ rotr(W[i-15], 18) ^ (W[i-15] >> 3)
+        s1 = rotr(W[i-2], 17) ^ rotr(W[i-2], 19) ^ (W[i-2] >> 10)
+        W[i] = (W[i-16] + s0 + W[i-7] + s1) & MASK32
+
+    a, b, c, d, e, f, g, h = IV
+    for i in range(min(rounds, 64)):
         S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)
         ch = (e & f) ^ (~e & g) & MASK32
         temp1 = (h + S1 + ch + K[i] + W[i]) & MASK32
@@ -69,336 +62,312 @@ def sha256_rounds(state, W, start_round, end_round):
         e = (d + temp1) & MASK32
         d = c; c = b; b = a
         a = (temp1 + temp2) & MASK32
-    return [a, b, c, d, e, f, g, h]
 
-
-def expand_schedule(msg_words):
-    W = list(msg_words) + [0] * (64 - len(msg_words))
-    for i in range(16, 64):
-        s0 = rotr(W[i-15], 7) ^ rotr(W[i-15], 18) ^ (W[i-15] >> 3)
-        s1 = rotr(W[i-2], 17) ^ rotr(W[i-2], 19) ^ (W[i-2] >> 10)
-        W[i] = (W[i-16] + s0 + W[i-7] + s1) & MASK32
-    return W
+    return [(IV[j] + v) & MASK32 for j, v in enumerate([a, b, c, d, e, f, g, h])]
 
 
 def parity(x):
-    """Parity (XOR of all bits)."""
     x ^= x >> 16; x ^= x >> 8; x ^= x >> 4
     x ^= x >> 2; x ^= x >> 1
     return x & 1
 
 
 # ═══════════════════════════════════════════════════════════════
-# EXPERIMENT 1: Linear bias in SHA-256 tail (rounds R→64)
+# EXPERIMENT 1: Diff-linear bias — the MAIN experiment
 # ═══════════════════════════════════════════════════════════════
 
-def linear_bias_tail(start_round, samples=100000):
+def difflinear_main(total_rounds, samples=100000):
     """
-    Measure linear bias of SHA-256 from round start_round to 64.
+    For input pair (M, M') with DW[0] = 0x80000000:
+    Measure P(DH[bit] = 0) for each bit of hash word 0.
 
-    For a RANDOM function: bias = 0 (up to sampling noise ~1/√N).
-    For SHA-256: if bias > noise → we have a linear approximation.
-
-    Test: input mask α (on state), output mask β (on hash).
-    Bias = |P(α·x ⊕ β·f(x) = 0) - 1/2|
-
-    We test many (α, β) pairs.
+    Random oracle: P = 0.5 exactly.
+    Any deviation = distinguisher.
     """
-    noise_floor = 1.0 / math.sqrt(4 * samples)
-
-    # Generate random states at start_round and compute tail
-    biases = []
-    best_bias = 0
-    best_masks = None
-
-    # Test: single-bit input mask on register a or e
-    # Single-bit output mask on hash word 0
-    for in_reg in [0, 4]:  # a=0, e=4
-        for in_bit in range(32):
-            for out_bit in range(32):
-                count = 0
-                for _ in range(samples):
-                    msg = [random.getrandbits(32) for _ in range(16)]
-                    W = expand_schedule(msg)
-
-                    # Compute state at start_round
-                    state = sha256_rounds(list(IV), W, 0, start_round)
-
-                    # Input parity
-                    in_val = (state[in_reg] >> in_bit) & 1
-
-                    # Compute tail
-                    final = sha256_rounds(state, W, start_round, 64)
-                    # Add IV (feedforward)
-                    hash_val = [(IV[j] + final[j]) & MASK32 for j in range(8)]
-
-                    # Output parity
-                    out_val = (hash_val[0] >> out_bit) & 1
-
-                    if in_val ^ out_val == 0:
-                        count += 1
-
-                bias = abs(count / samples - 0.5)
-                if bias > best_bias:
-                    best_bias = bias
-                    reg_name = 'a' if in_reg == 0 else 'e'
-                    best_masks = (f"{reg_name}[{in_bit}]", f"H0[{out_bit}]")
-
-                biases.append(bias)
-
-                # Early termination for large scans
-                if in_bit > 4 and out_bit > 4 and best_bias < 2 * noise_floor:
-                    break
-            if in_bit > 4 and best_bias < 2 * noise_floor:
-                break
-
-    return best_bias, best_masks, noise_floor, biases
-
-
-def scan_linear_bias(samples=50000):
-    """Scan linear bias for different tail start points."""
-    print("LINEAR BIAS IN SHA-256 TAIL")
-    print("=" * 70)
-    print()
-    print(f"  Measure: max |P(α·state ⊕ β·hash = 0) - 1/2|")
-    print(f"  For tail from round R to round 64")
-    print(f"  Noise floor: 1/√(4N) where N = samples")
-    print()
-    print(f"  {'Start R':>8}  {'Best bias':>12}  {'Noise floor':>13}  "
-          f"{'Ratio':>8}  {'Masks':>20}  {'Significant?':>14}")
-    print(f"  {'-'*8}  {'-'*12}  {'-'*13}  {'-'*8}  {'-'*20}  {'-'*14}")
-
-    for R in [1, 2, 4, 8, 12, 16, 20, 24, 32]:
-        best, masks, noise, _ = linear_bias_tail(R, samples=samples)
-        ratio = best / noise
-        sig = "YES" if ratio > 3 else "no"
-
-        masks_str = f"{masks[0]}→{masks[1]}" if masks else "—"
-        print(f"  {R:>8}  {best:>12.6f}  {noise:>13.6f}  "
-              f"{ratio:>8.1f}  {masks_str:>20}  {sig:>14}")
-
-    print()
-
-
-# ═══════════════════════════════════════════════════════════════
-# EXPERIMENT 2: Multi-bit linear approximation
-# ═══════════════════════════════════════════════════════════════
-
-def multibit_linear(start_round=4, samples=50000):
-    """
-    Test multi-bit linear masks (XOR of multiple bits).
-    These can have higher bias than single-bit.
-
-    Specifically test masks aligned with Sigma/Ch/Maj structure.
-    """
-    print(f"MULTI-BIT LINEAR APPROXIMATION (R={start_round}→64)")
-    print("=" * 70)
-    print()
-
     noise = 1.0 / math.sqrt(4 * samples)
 
-    # Predefined masks based on SHA-256 structure
-    masks = [
-        # Sigma1 structure: bits 6,11,25
-        ("Σ1-aligned", lambda s: ((s[4]>>6)^(s[4]>>11)^(s[4]>>25)) & 1,
-                        lambda h: (h[0]>>6) & 1),
-        # Sigma0 structure: bits 2,13,22
-        ("Σ0-aligned", lambda s: ((s[0]>>2)^(s[0]>>13)^(s[0]>>22)) & 1,
-                        lambda h: (h[0]>>2) & 1),
-        # Ch structure: e selects f vs g
-        ("Ch-aligned", lambda s: ((s[4]&s[5])^(~s[4]&s[6])) & 1,
-                        lambda h: h[0] & 1),
-        # Parity of a
-        ("parity(a)", lambda s: parity(s[0]),
-                       lambda h: parity(h[0])),
-        # Parity of e
-        ("parity(e)", lambda s: parity(s[4]),
-                       lambda h: parity(h[0])),
-        # XOR a[0]⊕e[0]
-        ("a[0]⊕e[0]", lambda s: (s[0] ^ s[4]) & 1,
-                        lambda h: h[0] & 1),
-        # Full word XOR: a⊕e bit 0
-        ("(a⊕e)[15]", lambda s: ((s[0]^s[4])>>15) & 1,
-                        lambda h: (h[0]>>15) & 1),
-        # d register (kernel element)
-        ("d[0]", lambda s: s[3] & 1,
-                  lambda h: h[0] & 1),
-        # h register (kernel element)
-        ("h[0]", lambda s: s[7] & 1,
-                  lambda h: h[0] & 1),
-    ]
-
-    print(f"  {'Mask':>15}  {'Bias':>10}  {'Noise':>10}  {'Ratio':>8}  {'Significant':>12}")
-    print(f"  {'-'*15}  {'-'*10}  {'-'*10}  {'-'*8}  {'-'*12}")
-
-    for name, in_mask, out_mask in masks:
-        count = 0
-        for _ in range(samples):
-            msg = [random.getrandbits(32) for _ in range(16)]
-            W = expand_schedule(msg)
-            state = sha256_rounds(list(IV), W, 0, start_round)
-
-            in_val = in_mask(state)
-            final = sha256_rounds(state, W, start_round, 64)
-            hash_val = [(IV[j] + final[j]) & MASK32 for j in range(8)]
-            out_val = out_mask(hash_val)
-
-            if in_val ^ out_val == 0:
-                count += 1
-
-        bias = abs(count / samples - 0.5)
-        ratio = bias / noise
-        sig = "YES" if ratio > 3 else "no"
-        print(f"  {name:>15}  {bias:>10.6f}  {noise:>10.6f}  {ratio:>8.1f}  {sig:>12}")
-
-    print()
-
-
-# ═══════════════════════════════════════════════════════════════
-# EXPERIMENT 3: Differential-Linear distinguisher
-# ═══════════════════════════════════════════════════════════════
-
-def difflinear_distinguisher(diff_rounds=4, samples=100000):
-    """
-    THE COMBINED ATTACK:
-    1. Choose input pair (M, M') with DW[0] = 0x80000000
-    2. Compute H = SHA(M), H' = SHA(M')
-    3. Measure: P(β · (H ⊕ H') = 0) for various masks β
-
-    For random oracle: P = 1/2 for any β
-    For SHA-256: if differential creates bias at any β → distinguisher!
-
-    This directly measures whether the Wang chain differential
-    creates output correlations through the random-looking tail.
-    """
-    print(f"DIFFERENTIAL-LINEAR DISTINGUISHER")
-    print(f"  Input diff: DW[0] = 0x80000000")
-    print(f"  Full SHA-256 (64 rounds)")
-    print("=" * 70)
-    print()
-
-    noise = 1.0 / math.sqrt(4 * samples)
-
-    # For each output bit, measure P(DH[bit] = 0)
-    bit_biases = []
-    print(f"  {'Output bit':>12}  {'P(=0)':>10}  {'Bias':>10}  "
-          f"{'Ratio':>8}  {'Status':>10}")
-    print(f"  {'-'*12}  {'-'*10}  {'-'*10}  {'-'*8}  {'-'*10}")
-
-    # Pre-generate all pairs
-    bit_counts = [[0, 0] for _ in range(32)]  # [zero_count, one_count] per bit
-    word_counts = Counter()
+    bit_counts = [0] * 32  # count of DH[bit]=0
+    parity_zero = 0
+    dh_counter = Counter()
 
     for _ in range(samples):
         msg = [random.getrandbits(32) for _ in range(16)]
         msg2 = list(msg)
         msg2[0] ^= 0x80000000
 
-        W1 = expand_schedule(msg)
-        W2 = expand_schedule(msg2)
-        h1 = sha256_rounds(list(IV), W1, 0, 64)
-        h2 = sha256_rounds(list(IV), W2, 0, 64)
+        h1 = sha256_full(msg, total_rounds)
+        h2 = sha256_full(msg2, total_rounds)
 
-        hash1 = [(IV[j] + h1[j]) & MASK32 for j in range(8)]
-        hash2 = [(IV[j] + h2[j]) & MASK32 for j in range(8)]
+        dh = h1[0] ^ h2[0]
+        dh_counter[dh] += 1
 
-        dh0 = hash1[0] ^ hash2[0]
-        word_counts[dh0] += 1
-
-        for bit in range(32):
-            if (dh0 >> bit) & 1 == 0:
-                bit_counts[bit][0] += 1
-            else:
-                bit_counts[bit][1] += 1
-
-    max_bias = 0
-    for bit in range(32):
-        p0 = bit_counts[bit][0] / samples
-        bias = abs(p0 - 0.5)
-        ratio = bias / noise
-        status = "BIASED" if ratio > 3 else "random"
-        bit_biases.append(bias)
-
-        if bias > max_bias:
-            max_bias = bias
-
-        print(f"  H[0][{bit:>2}]     {p0:>10.6f}  {bias:>10.6f}  "
-              f"{ratio:>8.1f}  {status:>10}")
-
-    print()
-    print(f"  Max single-bit bias: {max_bias:.6f} (noise={noise:.6f})")
-    print(f"  Ratio: {max_bias/noise:.1f}")
-    print()
-
-    # Multi-bit: parity of output word
-    parity_count = 0
-    for dh, cnt in word_counts.items():
         if parity(dh) == 0:
-            parity_count += cnt
-    p_par = parity_count / samples
-    par_bias = abs(p_par - 0.5)
-    print(f"  Parity bias: {par_bias:.6f} (ratio={par_bias/noise:.1f})")
+            parity_zero += 1
+
+        for b in range(32):
+            if (dh >> b) & 1 == 0:
+                bit_counts[b] += 1
+
+    # Analysis
+    biases = [abs(bit_counts[b] / samples - 0.5) for b in range(32)]
+    max_bias = max(biases)
+    max_bit = biases.index(max_bias)
+    par_bias = abs(parity_zero / samples - 0.5)
+    unique = len(dh_counter)
+    max_count = dh_counter.most_common(1)[0][1]
+
+    return {
+        'max_bias': max_bias, 'max_bit': max_bit,
+        'par_bias': par_bias, 'noise': noise,
+        'unique': unique, 'max_count': max_count,
+        'biases': biases, 'samples': samples
+    }
+
+
+def run_difflinear_scan():
+    """Scan across different round counts."""
+    print("DIFFERENTIAL-LINEAR BIAS SCAN")
+    print("═" * 70)
+    print()
+    print("  Input diff: DW[0] = 0x80000000 (MSB of first message word)")
+    print("  Measuring: P(DH_bit = 0) for each bit of H[0]")
     print()
 
-    # Unique output diffs
-    print(f"  Unique DH values: {len(word_counts)} / {samples}")
-    print(f"  Top 5 DH values:")
-    for dh, cnt in word_counts.most_common(5):
-        print(f"    0x{dh:08x}: {cnt} times ({cnt/samples:.6f})")
+    print(f"  {'Rounds':>7}  {'Samples':>8}  {'Max bias':>10}  {'Max bit':>8}  "
+          f"{'Par bias':>10}  {'Noise':>8}  {'Max/Noise':>10}  {'Dist?':>6}")
+    print(f"  {'-'*7}  {'-'*8}  {'-'*10}  {'-'*8}  "
+          f"{'-'*10}  {'-'*8}  {'-'*10}  {'-'*6}")
+
+    for R in [4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64]:
+        N = 100000
+        r = difflinear_main(R, samples=N)
+        ratio = r['max_bias'] / r['noise']
+        dist = "YES" if ratio > 3.5 else "no"
+
+        print(f"  {R:>7}  {N:>8}  {r['max_bias']:>10.6f}  {r['max_bit']:>8}  "
+              f"{r['par_bias']:>10.6f}  {r['noise']:>8.6f}  {ratio:>10.1f}  {dist:>6}")
+
     print()
 
-    return max_bias, noise
+
+# ═══════════════════════════════════════════════════════════════
+# EXPERIMENT 2: Structure-aligned masks (faster than full scan)
+# ═══════════════════════════════════════════════════════════════
+
+def structure_aligned_masks(total_rounds=64, samples=200000):
+    """
+    Test specific output masks aligned with SHA-256 internal structure.
+    These are MORE LIKELY to show bias than random single-bit masks.
+    """
+    print(f"STRUCTURE-ALIGNED MASKS (R={total_rounds}, N={samples})")
+    print("═" * 70)
+    print()
+
+    noise = 1.0 / math.sqrt(4 * samples)
+
+    # Pre-compute all pairs
+    dh_words = [[] for _ in range(8)]  # DH for each hash word
+
+    for _ in range(samples):
+        msg = [random.getrandbits(32) for _ in range(16)]
+        msg2 = list(msg)
+        msg2[0] ^= 0x80000000
+
+        h1 = sha256_full(msg, total_rounds)
+        h2 = sha256_full(msg2, total_rounds)
+
+        for w in range(8):
+            dh_words[w].append(h1[w] ^ h2[w])
+
+    # Test masks
+    masks = [
+        # Single bits across all words
+        *[(f"H[{w}][0]", w, lambda dh, w=w: dh & 1) for w in range(8)],
+        *[(f"H[{w}][15]", w, lambda dh, w=w: (dh >> 15) & 1) for w in range(8)],
+        *[(f"H[{w}][31]", w, lambda dh, w=w: (dh >> 31) & 1) for w in range(8)],
+        # Parity of each word
+        *[(f"par(H[{w}])", w, lambda dh: parity(dh)) for w in range(8)],
+        # Σ1-aligned: bits 6,11,25
+        *[(f"H[{w}]Σ1", w, lambda dh: ((dh>>6)^(dh>>11)^(dh>>25)) & 1) for w in range(8)],
+        # Σ0-aligned: bits 2,13,22
+        *[(f"H[{w}]Σ0", w, lambda dh: ((dh>>2)^(dh>>13)^(dh>>22)) & 1) for w in range(8)],
+        # Low byte parity
+        *[(f"H[{w}]lo8", w, lambda dh: parity(dh & 0xFF)) for w in range(8)],
+        # Cross-word: H[0] ⊕ H[4] (a ⊕ e structure)
+        ("H[0]⊕H[4] bit0", -1, None),
+        ("par(H[0]⊕H[4])", -1, None),
+    ]
+
+    print(f"  {'Mask':<20}  {'Bias':>10}  {'Noise':>10}  {'Ratio':>8}  {'Significant?':>14}")
+    print(f"  {'-'*20}  {'-'*10}  {'-'*10}  {'-'*8}  {'-'*14}")
+
+    best_overall = 0
+    best_name = ""
+
+    for name, word, mask_fn in masks:
+        if word == -1:
+            # Cross-word masks
+            if "bit0" in name:
+                count = sum(1 for i in range(samples)
+                           if ((dh_words[0][i] ^ dh_words[4][i]) & 1) == 0)
+            else:
+                count = sum(1 for i in range(samples)
+                           if parity(dh_words[0][i] ^ dh_words[4][i]) == 0)
+        else:
+            count = sum(1 for dh in dh_words[word] if mask_fn(dh) == 0)
+
+        bias = abs(count / samples - 0.5)
+        ratio = bias / noise
+        sig = "YES" if ratio > 3.5 else "no"
+
+        if bias > best_overall:
+            best_overall = bias
+            best_name = name
+
+        if ratio > 2.0 or "par" in name or "[0]" in name[:5]:
+            print(f"  {name:<20}  {bias:>10.6f}  {noise:>10.6f}  "
+                  f"{ratio:>8.1f}  {sig:>14}")
+
+    print()
+    print(f"  Best mask: {best_name} (bias={best_overall:.6f}, "
+          f"ratio={best_overall/noise:.1f})")
+    print()
 
 
-def difflinear_by_rounds(samples=50000):
+# ═══════════════════════════════════════════════════════════════
+# EXPERIMENT 3: High-confidence test at 64 rounds
+# ═══════════════════════════════════════════════════════════════
+
+def high_confidence_test(samples=500000):
     """
-    Measure diff-linear bias for different number of total rounds.
-    This shows how bias decays as more rounds are added.
+    THE DEFINITIVE TEST: 500K samples for single-bit output biases.
+    Noise floor = 1/√(2M) ≈ 0.0007.
+    If we find bias > 0.003 → distinguisher at >4σ.
     """
-    print("DIFF-LINEAR BIAS vs NUMBER OF ROUNDS")
-    print("=" * 70)
+    print(f"HIGH-CONFIDENCE DIFF-LINEAR TEST (N={samples}, 64 rounds)")
+    print("═" * 70)
     print()
 
     noise = 1.0 / math.sqrt(4 * samples)
     print(f"  Noise floor: {noise:.6f}")
+    print(f"  4σ threshold: {4*noise:.6f}")
     print()
-    print(f"  {'Rounds':>8}  {'Max bit bias':>14}  {'Ratio':>8}  "
-          f"{'Parity bias':>14}  {'Ratio':>8}  {'Distinguisher?':>16}")
-    print(f"  {'-'*8}  {'-'*14}  {'-'*8}  {'-'*14}  {'-'*8}  {'-'*16}")
 
-    for total_rounds in [4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64]:
-        bit_counts = [[0, 0] for _ in range(32)]
-        parity_count = 0
+    bit_counts = [[0]*32 for _ in range(8)]  # 8 hash words × 32 bits
+    parity_counts = [0] * 8
+
+    for trial in range(samples):
+        msg = [random.getrandbits(32) for _ in range(16)]
+        msg2 = list(msg)
+        msg2[0] ^= 0x80000000
+
+        h1 = sha256_full(msg, 64)
+        h2 = sha256_full(msg2, 64)
+
+        for w in range(8):
+            dh = h1[w] ^ h2[w]
+            if parity(dh) == 0:
+                parity_counts[w] += 1
+            for b in range(32):
+                if (dh >> b) & 1 == 0:
+                    bit_counts[w][b] += 1
+
+        if (trial + 1) % 100000 == 0:
+            print(f"    [{trial+1}/{samples}]", flush=True)
+
+    # Find maximum bias across ALL 256 output bits
+    all_biases = []
+    for w in range(8):
+        for b in range(32):
+            bias = abs(bit_counts[w][b] / samples - 0.5)
+            all_biases.append((bias, w, b))
+
+    all_biases.sort(reverse=True)
+
+    print()
+    print(f"  TOP 10 BIASED BITS:")
+    print(f"  {'Bit':>10}  {'Bias':>10}  {'Ratio':>8}  {'Significant?':>14}")
+    print(f"  {'-'*10}  {'-'*10}  {'-'*8}  {'-'*14}")
+    for bias, w, b in all_biases[:10]:
+        ratio = bias / noise
+        sig = "YES" if ratio > 3.5 else "no"
+        print(f"  H[{w}][{b:>2}]   {bias:>10.6f}  {ratio:>8.1f}  {sig:>14}")
+
+    # Parity biases
+    print()
+    print(f"  PARITY BIASES:")
+    for w in range(8):
+        par_bias = abs(parity_counts[w] / samples - 0.5)
+        ratio = par_bias / noise
+        sig = "YES" if ratio > 3.5 else "no"
+        print(f"  par(DH[{w}]): {par_bias:.6f} (ratio={ratio:.1f}) {sig}")
+
+    # Multiple testing correction (Bonferroni)
+    n_tests = 256 + 8  # 256 bits + 8 parities
+    corrected_threshold = noise * math.sqrt(2 * math.log(n_tests))
+    print()
+    print(f"  Bonferroni-corrected threshold (p=0.05, {n_tests} tests): "
+          f"{corrected_threshold:.6f}")
+
+    max_bias = all_biases[0][0]
+    print(f"  Maximum observed bias: {max_bias:.6f}")
+    print(f"  Verdict: {'DISTINGUISHER FOUND!' if max_bias > corrected_threshold else 'No distinguisher (consistent with random oracle)'}")
+    print()
+
+    return all_biases[0]
+
+
+# ═══════════════════════════════════════════════════════════════
+# EXPERIMENT 4: Different input differences
+# ═══════════════════════════════════════════════════════════════
+
+def multi_diff_test(samples=100000):
+    """Test multiple input differences — maybe MSB isn't optimal."""
+    print(f"MULTI-DIFFERENCE TEST (N={samples}, 64 rounds)")
+    print("═" * 70)
+    print()
+
+    noise = 1.0 / math.sqrt(4 * samples)
+
+    diffs = [
+        ("DW[0] = 0x80000000", 0, 0x80000000),
+        ("DW[0] = 0x00000001", 0, 0x00000001),
+        ("DW[0] = 0xFFFFFFFF", 0, 0xFFFFFFFF),
+        ("DW[1] = 0x80000000", 1, 0x80000000),
+        ("DW[7] = 0x80000000", 7, 0x80000000),
+        ("DW[15]= 0x80000000", 15, 0x80000000),
+    ]
+
+    print(f"  {'Difference':<25}  {'Max bit bias':>14}  {'Par bias':>10}  "
+          f"{'Ratio':>8}  {'Dist?':>6}")
+    print(f"  {'-'*25}  {'-'*14}  {'-'*10}  {'-'*8}  {'-'*6}")
+
+    for name, word, val in diffs:
+        bit_counts = [0] * 32
+        par_count = 0
 
         for _ in range(samples):
             msg = [random.getrandbits(32) for _ in range(16)]
             msg2 = list(msg)
-            msg2[0] ^= 0x80000000
+            msg2[word] ^= val
 
-            W1 = expand_schedule(msg)
-            W2 = expand_schedule(msg2)
-            h1 = sha256_rounds(list(IV), W1, 0, total_rounds)
-            h2 = sha256_rounds(list(IV), W2, 0, total_rounds)
+            h1 = sha256_full(msg, 64)
+            h2 = sha256_full(msg2, 64)
 
-            hash1 = [(IV[j] + h1[j]) & MASK32 for j in range(8)]
-            hash2 = [(IV[j] + h2[j]) & MASK32 for j in range(8)]
+            dh = h1[0] ^ h2[0]
+            if parity(dh) == 0:
+                par_count += 1
+            for b in range(32):
+                if (dh >> b) & 1 == 0:
+                    bit_counts[b] += 1
 
-            dh0 = hash1[0] ^ hash2[0]
-            if parity(dh0) == 0:
-                parity_count += 1
+        max_bias = max(abs(bit_counts[b]/samples - 0.5) for b in range(32))
+        par_bias = abs(par_count/samples - 0.5)
+        ratio = max_bias / noise
+        dist = "YES" if ratio > 3.5 else "no"
 
-            for bit in range(32):
-                if (dh0 >> bit) & 1 == 0:
-                    bit_counts[bit][0] += 1
-
-        max_bias = max(abs(bit_counts[b][0]/samples - 0.5) for b in range(32))
-        par_bias = abs(parity_count/samples - 0.5)
-        mr = max_bias / noise
-        pr = par_bias / noise
-
-        dist = "YES" if mr > 3 or pr > 3 else "no"
-        print(f"  {total_rounds:>8}  {max_bias:>14.6f}  {mr:>8.1f}  "
-              f"{par_bias:>14.6f}  {pr:>8.1f}  {dist:>16}")
+        print(f"  {name:<25}  {max_bias:>14.6f}  {par_bias:>10.6f}  "
+              f"{ratio:>8.1f}  {dist:>6}")
 
     print()
 
@@ -409,46 +378,31 @@ def difflinear_by_rounds(samples=50000):
 
 if __name__ == '__main__':
     print("STEP 27c: DIFFERENTIAL-LINEAR ATTACK ON SHA-256")
-    print("Finding linear bias in the 'random' tail")
-    print("=" * 70)
+    print("Can we find ANY bias → beat 2^128?")
+    print("═" * 70)
     print()
 
     t_start = time.time()
 
-    # 1. Linear bias scan
-    print("─" * 70)
-    print("  PART 1: Pure linear bias in tail")
-    print("─" * 70)
-    scan_linear_bias(samples=20000)
+    # 1. Quick scan across rounds
+    run_difflinear_scan()
 
-    # 2. Multi-bit linear approximation
-    print("─" * 70)
-    print("  PART 2: Multi-bit (structure-aligned) linear masks")
-    print("─" * 70)
-    multibit_linear(start_round=4, samples=20000)
-    multibit_linear(start_round=8, samples=20000)
+    # 2. Structure-aligned masks at 64 rounds
+    structure_aligned_masks(total_rounds=64, samples=100000)
 
-    # 3. Diff-linear by rounds
-    print("─" * 70)
-    print("  PART 3: Diff-linear bias vs total rounds")
-    print("─" * 70)
-    difflinear_by_rounds(samples=30000)
+    # 3. Multiple input differences
+    multi_diff_test(samples=100000)
 
-    # 4. Full diff-linear on 64 rounds
-    print("─" * 70)
-    print("  PART 4: Full diff-linear distinguisher (64 rounds)")
-    print("─" * 70)
-    difflinear_distinguisher(samples=50000)
+    # 4. THE BIG TEST: high confidence at 64 rounds
+    high_confidence_test(samples=500000)
 
     elapsed = time.time() - t_start
-    print("=" * 70)
+    print("═" * 70)
     print(f"TIME: {elapsed:.1f}s")
     print()
-    print("DIFFERENTIAL-LINEAR VERDICT:")
-    print("  If ANY bias > noise at 64 rounds → SHA-256 ≠ random oracle")
-    print("  If all biases = noise → random oracle model holds completely")
+    print("DIFFERENTIAL-LINEAR FINAL VERDICT:")
+    print("  If max_bias > Bonferroni threshold → SHA-256 ≠ random oracle")
+    print("  → collision possible at 2^{128-k} where k = log2(bias/noise)")
     print()
-    print("  Implication for collision:")
-    print("  Even bias ε = 2^{-10} → collision at 2^{118} instead of 2^{128}")
-    print("  Bias ε = 2^{-20} → collision at 2^{108}")
-    print("  No bias → 2^{128} is tight")
+    print("  If no significant bias found → random oracle model holds")
+    print("  → 2^128 is TIGHT and no sub-birthday collision exists")
