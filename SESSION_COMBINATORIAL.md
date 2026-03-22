@@ -184,5 +184,43 @@ GF(2) rank deficiency:            Нет (256)   ✗ Исправлено
 
 ---
 
+---
+
+## 6. АУДИТ МЕТОДИЧКИ (methodology_v20.md, 18528 строк)
+
+### 6.1 Общая картина
+Методичка **гораздо аккуратнее** чем сводный RESULTS.md:
+- Самостоятельно нашла и отозвала 4+ артефакта (phi, corr, дубликаты W[0])
+- НЕ содержит "rank-5 bilinear form" (ошибка только в RESULTS.md)
+- НЕ содержит "independently controllable" (ошибка только в RESULTS.md)
+- T_RANK5_INVARIANT — другой, корректный объект (rank якобиана 5×15)
+
+### 6.2 Подозрительные утверждения (не отозваны)
+| Утверждение | Проблема |
+|---|---|
+| "First chosen-prefix distinguisher for full SHA-256" | Требует HC preprocessing, нестандартная модель |
+| ECDSA key recovery | Только q=65537 (16 бит), не secp256k1 |
+| "Universal constants" 0.593/0.527 | Из конечных экспериментов |
+| Profile space "compression 2^46" | N=200K не может оценить 2^64 |
+| "Any M1" chosen-prefix | Verified на N=5 (тривиально мало) |
+
+### 6.3 Паттерн ошибок
+Методичка склонна завышать результаты ДО верификации,
+но затем ЧЕСТНО отзывает. Это нормальный научный процесс.
+Проблема: RESULTS.md сохранил некоторые завышения
+без соответствующих исправлений (rank=5, independence, O(2^34)).
+
+### 6.4 Что подтверждено как надёжное
+- Carry-AND identity (аналитически)
+- Wang chain (De=0, r1-16)
+- De17=0 при 2^32 cost (одиночный барьер)
+- Barrier independence (r < 0.006)
+- Sigma1 fixed points (8 штук)
+- 82.6 нейтральных бит
+- Schedule full rank (512/512)
+- Фазовый переход R*=19
+
+---
+
 *Session: Combinatorial Synthesis + Audit | March 2026*
-*24 experiments, 5 critical corrections found*
+*24 experiments, 5 critical corrections, 7 suspicious claims identified*
