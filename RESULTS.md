@@ -26,10 +26,11 @@ The correction term involves AND — the same operation as Ch and Maj.
 ## 2. Bilinear Form and Kernel
 
 The quadratic forms Ch and Maj define a bilinear form B on state space:
-- **Rank of B = 5** (per bit position, 8×8 matrix)
+- **Rank of B = 4** (per bit position, 8×8 matrix) [CORRECTED: was 5, audit confirmed 4]
 - **Kernel dimension = 4**: {d, h, f⊕g, a⊕b⊕c}
 - Registers d and h are "invisible" to quadratic nonlinearity
 - 95.1% of AND terms cancel across rounds (massive algebraic compensation)
+  [NOTE: 95.1% figure not independently reproduced in audit]
 
 ## 3. De17 = 0 Solution (CONCRETE RESULT)
 
@@ -63,18 +64,21 @@ Round | W[12] | W[13] | W[14] | W[15]
 
 ## 5. Multi-Barrier Extension
 
-(De17, De18, De19, De20) are **independently controllable** via
-the 4 free words (verified: 20000/20000 unique 4-tuples).
+(De17, De18, De19, De20) are controllable via the 4 free words,
+but **NOT independently** — each free word affects ALL barriers
+simultaneously (audit confirmed: W[14] changes De17 in 100% of cases).
+[CORRECTED: "independently controllable" was WRONG]
 
-- 128 bits freedom = 4 × 32-bit constraints
-- Wang chain extends from 16 to 20 rounds
-- Cost: O(2^32) per barrier = O(2^34) total for 4 barriers
+- 128 bits freedom for 128 bits of constraints (4 × 32-bit barriers)
+- Wang chain extends from 16 rounds, but barriers are COUPLED
+- Cost: NOT 4 × O(2^32) = O(2^34). Real cost ≈ joint birthday
+  in 128-bit space ≈ O(2^64) [CORRECTED: was O(2^34)]
 
 ## 6. Collision Budget
 
 ```
 Rounds  1-16:  O(1)      Wang chain (De=0 maintained)
-Rounds 17-20:  O(2^34)   Free word technique (4 barriers)
+Rounds 17-20:  O(2^64)   Free word technique (4 coupled barriers) [CORRECTED: was 2^34]
 Rounds 21-64:  ???       No free words left in single block
                          → multi-block or statistical methods needed
 ```
@@ -89,10 +93,11 @@ Cancellation decomposition:
 - Modified SHA with rank-4 bilinear form: only 70.1% cancellation
 - **Higher rank → more cancellation** (counterintuitive but verified)
 
-Rank-5 interpretation:
-- Kernel {d, h, f⊕g, a⊕b⊕c} = 3 "invisible" directions
-- 5/8 dimensions carry nonlinearity
-- Prediction: Da+De / total_AND ≈ 5% — matches observed 4.9%
+Rank-4 interpretation: [CORRECTED: was rank-5]
+- Kernel {d, h, f⊕g, a⊕b⊕c} = 4 "invisible" directions
+- 4/8 dimensions carry nonlinearity
+- Prediction: Da+De / total_AND ≈ 4/8 = 50% [CORRECTED: was 5%]
+  [NOTE: The 4.9% observation may reflect a different measurement]
 
 ## 8. Algebraic Degree of Barrier Function (Step 10)
 
@@ -167,8 +172,8 @@ RESULT:
 What this research **achieves**:
 - New exact algebraic identity for SHA-256 carry structure
 - Concrete De17=0 solution (verified) breaking the round-17 barrier
-- Wang chain extension from 16 to 20 rounds at O(2^34) cost
-- Rank-5 explanation of AND-cancellation mechanism
+- Wang chain extension from 16 to 20 rounds at O(2^64) cost [CORRECTED: was 2^34]
+- Rank-4 bilinear form and kernel explanation [CORRECTED: was rank-5]
 - Comprehensive proof of WHY full SHA-256 collision requires 2^128
 
 What this research **does not achieve**:
@@ -345,13 +350,12 @@ Three genuinely novel mathematical frameworks applied to SHA-256:
 - No low-rank tropical structure exists
 - Carry HW ≈ 90/192 bits (47%, near random 50%)
 
-### GF(2) Jacobian Rank Deficiency — STRUCTURAL FINDING
+### GF(2) Jacobian Rank — NO DEFICIENCY [CORRECTED]
 - Full 256×512 GF(2) Jacobian of SHA-256 compression function
-- **Rank = 254-255 (deficiency 1-2)** at all rounds R ≥ 12
-- For random matrix: P(rank < 256) ≈ 2^{-257} — this IS structural
-- Means: 1-2 GF(2)-linear relations among output bits exist
-- Verified across 10+ random operating points
-- **Practical impact: negligible** (saves 2^1 on 2^128)
+- **Rank = 256 (FULL)** — verified in audit across 5 random points
+- [CORRECTED: original claim of rank 254-255 was a BUG in row reduction]
+- No GF(2)-linear relations among output bits
+- SHA-256 Jacobian is full-rank, as expected for a well-designed hash
 
 ### Synthesis
 SHA-256 is a 2-adic isometry with no exploitable algebraic shortcuts.
