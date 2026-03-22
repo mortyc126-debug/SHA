@@ -361,16 +361,36 @@ def main():
         print(f"    bit {b:2d}: P=1 = {p:.4f}  bias={bias:.4f}{marker}")
     print(f"\n  Max single-bit bias: {max_bias:.4f}")
 
-    # ─── PART 5: Full enumeration (2^24 sample to extrapolate) ───
+    # ─── PART 5: Larger enumeration (2^22 sequential) ───
     print("\n" + "="*80)
-    print("PART 5: LARGE-SCALE ENUMERATION (2^24 sample)")
+    print("PART 5: LARGE-SCALE ENUMERATION (2^22 sequential)")
     print("="*80)
 
-    N_enum = 1 << 24
+    N_enum = 1 << 22
     t0 = time.time()
     zero_count = 0
     low_hw_count = 0  # HW <= 4
     hw_accum = 0
+    min_hw_seen = 33
+    min_hw_val = 0
+
+    # Pre-compute parts that don't depend on W[14]
+    # Run rounds 0-13 once, then inline rounds 14-17
+    W_base = list(base_msg)
+    We_base = expand_W(W_base)
+    Wp_base = list(W_base); Wp_base[0] ^= 0x80000000
+    s_o = list(H0); s_t = list(H0)
+    s_o = sha_round(s_o, W_base[0], K[0])
+    s_t = sha_round(s_t, Wp_base[0], K[0])
+    for t in range(1, 16):
+        a,b,c,d,e,f,g,h = s_o
+        a2,b2,c2,d2,e2,f2,g2,h2 = s_t
+        tp_ = add32(h, Sig1(e), Ch(e,f,g), K[t])
+        tp2_ = add32(h2, Sig1(e2), Ch(e2,f2,g2), K[t])
+        target_ = add32(d, tp_, W_base[t])
+        Wp_base[t] = (target_ - d2 - tp2_) & MASK
+        s_o = sha_round(s_o, W_base[t], K[t])
+        s_t = sha_round(s_t, Wp_base[t], K[t])
 
     for w14 in range(N_enum):
         msg = list(base_msg)
@@ -378,21 +398,27 @@ def main():
         de = get_de17(msg)
         if de == 0:
             zero_count += 1
-            print(f"    *** De17=0 found at W[14]=0x{w14:08x} ***")
+            print(f"    *** De17=0 found at W[14]=0x{w14:08x} ***", flush=True)
         h = hw(de)
+        if h < min_hw_seen:
+            min_hw_seen = h
+            min_hw_val = w14
         if h <= 4:
             low_hw_count += 1
         hw_accum += h
+        if w14 > 0 and w14 % (1 << 20) == 0:
+            print(f"    ... {w14>>20}/{N_enum>>20} M done ...", flush=True)
 
     elapsed = time.time() - t0
 
-    print(f"\n  Enumerated: 2^24 = {N_enum} values of W[14]")
+    print(f"\n  Enumerated: 2^22 = {N_enum} values of W[14]")
     print(f"  Time: {elapsed:.1f}s ({N_enum/elapsed:.0f} evals/sec)")
     print(f"  De17=0 count: {zero_count}")
     print(f"  De17=0 rate: {zero_count/N_enum:.2e}")
     extrapolated_zeros = zero_count * (2**32 / N_enum)
     print(f"  Extrapolated De17=0 in full 2^32: ~{extrapolated_zeros:.1f}")
     print(f"  Mean HW: {hw_accum/N_enum:.4f}")
+    print(f"  Min HW seen: {min_hw_seen} at W[14]=0x{min_hw_val:08x}")
     print(f"  HW<=4 count: {low_hw_count} ({low_hw_count/N_enum*100:.4f}%)")
 
     # ─── PART 6: Carry chain depth analysis ───
