@@ -176,11 +176,56 @@ What this research **does not achieve**:
 - No sub-birthday barrier break (each barrier costs 2^32)
 - No algebraic shortcut for inversion (degree ≥ 4, nonlinearity 94%)
 
+## 13. Nikolic-Biryukov Local Collision Analysis (Step 17)
+
+### Sigma Fixed Points
+- **Sigma1**: 8 fixed points (kernel dim 3): {0, 0x33333333, 0x55555555, 0x66666666, 0x99999999, 0xaaaaaaaa, 0xcccccccc, 0xffffffff}
+- **Sigma0**: 2 fixed points: {0, 0xffffffff}
+- Only x=0xffffffff gives Sigma(x+1)-Sigma(x) = +1
+
+### Local Collision Attempts
+- Da=+1, De=+1 after round 0 with DW[0]=+1: **always holds** (trivial)
+- **P(T2_diff = d_diff) = 0** in 1M trials — cannot simultaneously zero Da and De via DW
+- De=0 forcing for rounds 1-8 leaves state diff HW ≈ 75 (no closure)
+- Local collision closure: **0/2M trials** without message modification
+- Semi-free-start with Sigma fixed-point IV: **0/2M** (conditions still fail)
+
+### Brute-Force Search Results
+| Pattern | Rounds | Trials | Best HW | Collisions |
+|---------|--------|--------|---------|------------|
+| DW[0]=+1 | 13-20 | 50M each | 81-86 | 0 |
+| DW[i]=+1, DW[i+1]=-1 | 14-21 | 50M each | 80-86 | 0 |
+| DW[i]=+1, DW[i+4]=-1 | 17-24 | 50M each | ~85 | 0 |
+| Bitflip optimization | 9 | 100 restarts | 76 | 0 |
+| Bitflip optimization | 21 | 100 restarts | 93 | 0 |
+
+### Why Brute Force Fails
+The NB approach (FSE 2008, 21-step practical collision) uses **round-by-round message modification**, not random search:
+1. Choose differential characteristic specifying which bits differ at each round
+2. Derive sufficient conditions on specific state bits (f[i]=g[i], b[i]=c[i], Sigma fixed-point conditions)
+3. Compute message words backwards from conditions
+4. Probability ≈ 2^(-C) where C = number of unsatisfied conditions
+5. With modification: C → small, making search tractable
+
+Our brute-force approach treats the reduced hash as a black box. The birthday bound for 256-bit output is 2^128, and 50M = 2^25.5 trials is nowhere near sufficient without structural exploitation.
+
 ### Comparison with State of the Art
-- Best published SHA-256 collision: **31 rounds** (Mendel et al.)
-- Our approach: **20 rounds** with O(2^34) — different technique
-- Full 64-round collision: **open problem** — equivalent to breaking SHA-256
-- Our analysis confirms the 2^128 birthday bound is tight
+| Attack | Rounds | Complexity | Authors | Year |
+|--------|--------|-----------|---------|------|
+| Collision (practical) | 21 | Practical | Nikolic, Biryukov | 2008 |
+| Collision (practical) | 24 | Practical | Sanadhya, Sarkar | 2008 |
+| Collision (practical) | 28 | Practical | Mendel, Nad, Schlaffer | 2013 |
+| **Collision (practical)** | **31** | **1.2 hours** | **Li, Liu, Wang, Dong, Sun** | **2024** |
+| Semi-free-start (practical) | **39** | 120 seconds | Li, Liu, Wang | 2024 |
+| Our De17=0 | 20 | O(2^34) | This work | 2024 |
+| Full SHA-256 | 64 | **≥ 2^128** | Open problem | — |
+
+### What Would Be Needed for Full Collision
+1. **SAT/MILP solver** for differential characteristic search (automated)
+2. **Round-by-round message modification** (not black-box)
+3. **Neutral bits** for efficient search space expansion
+4. **Advanced search strategies**: guess-and-determine, branching heuristics
+5. For 64 rounds: fundamentally new mathematics (beyond current knowledge)
 
 ## Files
 
@@ -209,6 +254,14 @@ What this research **does not achieve**:
 | `step16a_sufficient_conditions.py` | Wang-style sufficient conditions |
 | `step16b_msg_modification.py` | DW cancellation and Da analysis |
 | `step16c_local_collision.py` | Local collision + freedom analysis |
+| `step17a_sigma_fixpoints.py` | Sigma0/Sigma1 fixed points (GF2 kernel) |
+| `step17b_local_collision.py` | 9-step local collision path tracing |
+| `step17b_nb_collision.py` | NB closure probability + De=0 forcing |
+| `step17c_collision_search.c` | C brute-force 100M trial search |
+| `step17d_semifree.py` | Semi-free-start with fixed-point IV |
+| `step17e_correct.py` | Sign-corrected differential path |
+| `step17f_nb_search.c` | Multi-pattern DW collision search |
+| `step17g_guess_determine.py` | Bitflip + stochastic optimization |
 
 ## Key Equations
 
