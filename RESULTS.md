@@ -79,6 +79,49 @@ Rounds 21-64:  ???       No free words left in single block
                          → multi-block or statistical methods needed
 ```
 
+## 7. AND-Cancellation and Rank-5 Invariant (Steps 10-13)
+
+**97.6% of AND terms cancel across rounds** (655 AND bits → 16 bits output).
+
+Cancellation decomposition:
+- Shift register: 8 registers, only 2 independent (a,e) → 75% redundancy
+- Even in reduced (Da,De) space: 95.1% cancellation persists
+- Modified SHA with rank-4 bilinear form: only 70.1% cancellation
+- **Higher rank → more cancellation** (counterintuitive but verified)
+
+Rank-5 interpretation:
+- Kernel {d, h, f⊕g, a⊕b⊕c} = 3 "invisible" directions
+- 5/8 dimensions carry nonlinearity
+- Prediction: Da+De / total_AND ≈ 5% — matches observed 4.9%
+
+## 8. Algebraic Degree of Barrier Function (Step 10)
+
+Map f: W14 → De17 analyzed:
+- **Algebraic degree ≥ 4** (all k-th derivatives non-zero for k ≤ 3)
+- **Nonlinearity 94%** (far from affine — Walsh analysis)
+- W14 controls the **operating point** of nonlinear gates (second-order effect)
+- Algebraic inversion hard → brute force ~2^32 optimal per barrier
+
+## 9. Post-Round-20 Analysis (Step 12)
+
+- After De17=0, differential explodes to ~120 HW by round 64
+- **Natural De=0**: 0 events in 640K evaluations (P = 2^-32 per round)
+- Multi-block: reduces to same 2^128 complexity (no improvement)
+- Full SHA-256 collision still requires 2^128 work
+
+## 10. Honest Assessment
+
+What this research **achieves**:
+- New exact algebraic identity for SHA-256 carry structure
+- Concrete De17=0 solution (verified) breaking the round-17 barrier
+- Wang chain extension from 16 to 20 rounds at O(2^34) cost
+- Rank-5 explanation of AND-cancellation mechanism
+
+What this research **does not achieve**:
+- No full collision (rounds 21-64 remain at 2^128)
+- No sub-birthday barrier break (each barrier costs 2^32)
+- No algebraic shortcut for inversion (degree ≥ 4, nonlinearity 94%)
+
 ## Files
 
 | File | Description |
@@ -96,6 +139,11 @@ Rounds 21-64:  ???       No free words left in single block
 | `clifford_step9.py` | Multi-barrier analysis and collision budget |
 | `de17_search.c` | C brute-force search (first De17=0 find) |
 | `de17_verify.c` | C search with full 64-round verification |
+| `step10_algebra.py` | Algebraic degree and nonlinearity analysis |
+| `step10_dual_barrier.c` | Dual barrier (De17=De18=0) C search |
+| `step11_markov_carry.py` | Markov chain carry structure analysis |
+| `step12_post20.py` | Post-round-20 and multi-block analysis |
+| `step13_rank_invariant.py` | Rank-5 invariant and cancellation |
 
 ## Key Equations
 
