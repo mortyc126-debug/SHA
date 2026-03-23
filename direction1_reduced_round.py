@@ -497,15 +497,16 @@ def main():
         else:
             per_bit_sec = np.log2(n_samples) + 1  # lower bound
 
-        prob_low = d['prob_low_hw']
-        if prob_low > 0:
-            margin_hw = -np.log2(prob_low)
+        # Use modular closeness probability as a differential metric
+        prob_mod = d['prob_modular']
+        if prob_mod > 0:
+            margin_mod = -np.log2(prob_mod)
         else:
-            margin_hw = np.log2(n_samples) + 1
+            margin_mod = np.log2(n_samples) + 1
 
         sec_results[N] = {
             'per_bit_security': per_bit_sec,
-            'margin_from_hw': margin_hw,
+            'margin_modular': margin_mod,
             'deviation': dev,
         }
 
@@ -513,48 +514,55 @@ def main():
     # COMPREHENSIVE TABLE
     # ═══════════════════════════════════════════════════════════════════════════
     print()
-    print("=" * 130)
+    print("=" * 150)
     print("COMPREHENSIVE TABLE: ALL METRICS vs ROUND COUNT")
-    print("=" * 130)
-    header = (f"{'Rnd':>3s} | {'P(HW<32)':>9s} | {'Avg_HW':>7s} | {'BitDev':>8s} | "
-              f"{'WRank':>5s} | {'WDeps':>5s} | {'ActBits':>7s} | {'MAD':>6s} | "
-              f"{'AlgDeg':>6s} | {'LinBias':>9s} | {'-lg2(B)':>7s} | "
-              f"{'SecMarg':>7s} | {'Phase':>7s}")
+    print("=" * 150)
+    header = (f"{'Rnd':>3s} | {'P(HW<64)':>9s} | {'P(HW<96)':>9s} | {'Avg_HW':>7s} | "
+              f"{'ZeroWds':>7s} | {'P(mod)':>8s} | "
+              f"{'Words':>5s} | {'Rank':>4s} | {'MAD':>6s} | "
+              f"{'Deg':>4s} | {'LinBias':>9s} | {'-lg2(B)':>7s} | "
+              f"{'BitDev':>8s} | {'SecBits':>7s} | {'Phase':>7s}")
     print(header)
-    print("-" * 130)
+    print("-" * 150)
 
     phase_transition_round = None
 
     for N in range(1, 41):
         d = diff_results[N]
-        a = aval_results.get(N, {'rank': 0, 'n_word_deps': 0, 'n_active_bits': 0, 'mad_from_half': 0.5})
+        a = aval_results.get(N, {'rank': 0, 'n_words_affected': 0, 'n_active_bits': 0, 'mad_from_half': 0.5})
         g = deg_results.get(N, {'degree': 0})
         l = lin_results.get(N, {'best_bias': 0})
-        s = sec_results.get(N, {'per_bit_security': 0, 'margin_from_hw': 0})
+        s = sec_results.get(N, {'per_bit_security': 0, 'margin_modular': 0, 'deviation': 0})
 
         bias = l['best_bias']
         log_bias = f"{-np.log2(bias):.1f}" if bias > 1e-10 else ">13"
 
-        sec_m = s['margin_from_hw']
-        sec_str = f"{sec_m:.1f}" if sec_m < 50 else ">13"
-
-        if d['prob_low_hw'] > 0.5:
-            phase = "EASY"
-        elif d['prob_low_hw'] > 0.01:
+        # Phase based on multiple criteria
+        if d['avg_zero_words'] > 4:
+            phase = "TRIV"   # most words unaffected
+        elif d['prob_hw_lt_96'] > 0.5:
+            phase = "EASY"   # majority of diffs have low HW
+        elif d['prob_hw_lt_96'] > 0.01:
             phase = "MEDIUM"
-        elif d['prob_low_hw'] > 0.0:
-            phase = "HARD"
+        elif d['prob_modular'] > 0.01:
+            phase = "HARD"   # modular structure still exploitable
+        elif d['best_bit_dev'] > 0.05:
+            phase = "V.HARD"
         else:
             phase = "INTRACT"
             if phase_transition_round is None:
                 phase_transition_round = N
 
-        print(f"{N:3d} | {d['prob_low_hw']:9.5f} | {d['avg_hw']:7.1f} | {d['best_bit_dev']:8.5f} | "
-              f"{a['rank']:3d}/8 | {a['n_word_deps']:5d} | {a['n_active_bits']:5d}   | {a['mad_from_half']:6.4f} | "
-              f"{g['degree']:6d} | {bias:9.6f} | {log_bias:>7s} | "
-              f"{sec_str:>7s} | {phase:>7s}")
+        sb = s['per_bit_security']
+        sb_str = f"{sb:.1f}" if sb < 20 else ">13"
 
-    print("=" * 130)
+        print(f"{N:3d} | {d['prob_hw_lt_64']:9.4f} | {d['prob_hw_lt_96']:9.4f} | {d['avg_hw']:7.1f} | "
+              f"{d['avg_zero_words']:7.2f} | {d['prob_modular']:8.4f} | "
+              f"{a['n_words_affected']:3d}/8 | {a['rank']:3d}  | {a['mad_from_half']:6.4f} | "
+              f"{g['degree']:>3d}+ | {bias:9.6f} | {log_bias:>7s} | "
+              f"{d['best_bit_dev']:8.5f} | {sb_str:>7s} | {phase:>7s}")
+
+    print("=" * 150)
     print()
 
     # ═══════════════════════════════════════════════════════════════════════════
@@ -565,63 +573,72 @@ def main():
     print("=" * 80)
     print()
 
-    first_no_low_hw = None
+    first_all_words = None
+    first_no_zero_words = None
+    first_hw_near_128 = None
     first_high_degree = None
     first_negligible_bias = None
-    first_hw_near_128 = None
+    first_no_modular = None
 
     for N in range(1, 41):
         d = diff_results[N]
-        if first_no_low_hw is None and d['prob_low_hw'] == 0:
-            first_no_low_hw = N
         if first_hw_near_128 is None and abs(d['avg_hw'] - 128) < 2:
             first_hw_near_128 = N
+        if first_no_zero_words is None and d['avg_zero_words'] < 0.01:
+            first_no_zero_words = N
+        if first_no_modular is None and d['prob_modular'] < 0.001:
+            first_no_modular = N
         if first_high_degree is None and deg_results[N]['degree'] >= 7:
             first_high_degree = N
         l = lin_results[N]
         if first_negligible_bias is None and l['best_bias'] < 0.01:
             first_negligible_bias = N
+        a = aval_results.get(N, {})
+        if first_all_words is None and a.get('n_words_affected', 0) == 8:
+            first_all_words = N
 
-    print(f"  Avalanche word-rank reaches 8/8 at:       round {full_rank_round}")
-    print(f"  Avg output HW within 2 of 128 at:         round {first_hw_near_128}")
-    print(f"  P(HW<32) drops to zero at:                round {first_no_low_hw}")
-    print(f"  Algebraic degree reaches >= 7 at:          round {first_high_degree}")
-    print(f"  Linear bias drops below 0.01 at:           round {first_negligible_bias}")
-    print(f"  Phase transition (INTRACTABLE) at:         round {phase_transition_round}")
+    print(f"  All 8 internal state words affected at:    round {first_all_words}")
+    print(f"  No zero-diff words (avg < 0.01) at:        round {first_no_zero_words}")
+    print(f"  Avg output HW within 2 of 128 at:          round {first_hw_near_128}")
+    print(f"  Modular diff prob < 0.001 at:               round {first_no_modular}")
+    print(f"  Algebraic degree reaches >= 7 at:           round {first_high_degree}")
+    print(f"  Linear bias drops below 0.01 at:            round {first_negligible_bias}")
+    print(f"  Phase transition (INTRACTABLE) at:          round {phase_transition_round}")
     print()
 
-    # ─── Differential probability decay ──────────────────────────────────
+    # ─── Differential probability decay: P(HW<64) on internal state ─────
     print("=" * 80)
-    print("DIFFERENTIAL PROBABILITY DECAY: P(output_HW < 32)")
+    print("DIFFERENTIAL PROBABILITY DECAY: P(internal_HW < 64)")
     print("=" * 80)
     print()
-    print(f"{'Round':>5s} | {'P(HW<32)':>10s} | {'-log2(P)':>10s} | {'Visual':>40s}")
-    print("-" * 72)
+    print(f"{'Round':>5s} | {'P(HW<64)':>10s} | {'P(HW<96)':>10s} | {'P(mod<2^16)':>11s} | {'Visual (HW<96)':>40s}")
+    print("-" * 82)
     for N in range(1, 41):
-        p = diff_results[N]['prob_low_hw']
-        if p > 0:
-            logp = -np.log2(p)
-            bar = "#" * min(40, int(logp * 3))
+        p64 = diff_results[N]['prob_hw_lt_64']
+        p96 = diff_results[N]['prob_hw_lt_96']
+        pm = diff_results[N]['prob_modular']
+        if p96 > 0:
+            bar = "#" * min(40, int(-np.log2(max(p96, 1e-15)) * 3))
         else:
-            logp = float('inf')
             bar = "#" * 40 + " (ZERO)"
-        print(f"{N:5d} | {p:10.6f} | {logp:10.2f} | {bar}")
+        print(f"{N:5d} | {p64:10.5f} | {p96:10.5f} | {pm:11.5f} | {bar}")
 
     print()
 
     # ─── Average HW convergence ─────────────────────────────────────────
     print("=" * 80)
-    print("AVERAGE OUTPUT HW CONVERGENCE (random target = 128)")
+    print("AVERAGE INTERNAL-STATE DIFF HW CONVERGENCE (target: 128)")
     print("=" * 80)
     print()
-    print(f"{'Round':>5s} | {'Avg HW':>8s} | {'|HW-128|':>8s} | {'Visual':>40s}")
-    print("-" * 68)
+    print(f"{'Round':>5s} | {'Avg HW':>8s} | {'|HW-128|':>8s} | {'ZeroWds':>7s} | {'Visual (|HW-128|)':>40s}")
+    print("-" * 72)
     for N in range(1, 41):
         hw = diff_results[N]['avg_hw']
         dev = abs(hw - 128)
+        zw = diff_results[N]['avg_zero_words']
         bar_len = min(40, int(dev / 3))
         bar = "#" * bar_len
-        print(f"{N:5d} | {hw:8.1f} | {dev:8.1f} | {bar}")
+        print(f"{N:5d} | {hw:8.1f} | {dev:8.1f} | {zw:7.2f} | {bar}")
 
     print()
 
@@ -687,16 +704,17 @@ def main():
     print("The 31-round collision boundary exists because multiple cryptographic")
     print("properties reach maturity in a narrow window around this point:")
     print()
-    print(f"  1. DIFFERENTIAL DIFFUSION:")
-    print(f"     - Output HW converges to random (128) by round {first_hw_near_128}.")
-    print(f"     - P(low HW diff) drops to zero by round {first_no_low_hw}.")
-    print(f"     - However, per-bit biases persist longer, giving attackers a")
-    print(f"       foothold through round ~{first_no_low_hw} via careful path selection.")
+    print(f"  1. DIFFERENTIAL DIFFUSION (internal state, no feed-forward):")
+    print(f"     - Average diff HW converges to 128 by round {first_hw_near_128}.")
+    print(f"     - Zero-diff words disappear by round {first_no_zero_words}.")
+    print(f"     - Modular closeness (|a-a'|<2^16) drops below 0.001 by round {first_no_modular}.")
+    print(f"     - Per-bit biases persist longer, giving attackers a")
+    print(f"       foothold via careful differential path selection.")
     print()
     print(f"  2. AVALANCHE COMPLETENESS:")
-    print(f"     - Full word-level dependency achieved at round {full_rank_round}.")
+    print(f"     - All 8 internal state words affected at round {first_all_words}.")
     print(f"     - But proximity to ideal 0.5 flip probability (MAD metric)")
-    print(f"       continues improving well into the 20s-30s range.")
+    print(f"       continues improving into the higher rounds.")
     print()
     print(f"  3. ALGEBRAIC DEGREE:")
     print(f"     - Reaches maximum testable degree (8) by round {first_high_degree}.")
@@ -704,18 +722,23 @@ def main():
     print(f"       defeating higher-order differential and algebraic attacks.")
     print()
     print(f"  4. LINEARITY:")
-    print(f"     - Best linear bias drops below 0.01 by round {first_negligible_bias}.")
+    print(f"     - Best linear bias drops below 0.01 by round {first_negligible_bias or 'N/A'}.")
     print(f"     - Below ~0.005, linear cryptanalysis requires > 2^40 samples,")
     print(f"       becoming computationally infeasible.")
     print()
-    print(f"  CRITICAL INSIGHT: The attack boundary at 31 rounds corresponds to")
-    print(f"  the zone where per-bit differential biases become too small to")
-    print(f"  construct valid multi-round differential paths. Before round {first_no_low_hw},")
-    print(f"  gross structural weaknesses exist. Between rounds {first_no_low_hw} and ~31,")
-    print(f"  sophisticated techniques (message modification, auxiliary differentials)")
-    print(f"  can still exploit residual biases. Beyond 31, the cumulative effect")
-    print(f"  of all nonlinear operations makes differential path probability")
-    print(f"  vanishingly small (estimated < 2^-256 for full 64 rounds).")
+    print(f"  CRITICAL INSIGHT: The distinction between our random-differential")
+    print(f"  measurement (which shows intractability early) and the 31-round")
+    print(f"  attack boundary reveals the power of STRUCTURED differentials.")
+    print(f"  Real attacks by Mendel, Eichlseder et al. use:")
+    print(f"    - Carefully chosen differential characteristics (not random)")
+    print(f"    - Message modification to force early-round conditions")
+    print(f"    - Modular arithmetic properties (carries) for probability control")
+    print(f"  Our modular closeness metric (P(|a-a'|<2^16)) captures some of this")
+    print(f"  structure. The transition from 'exploitable modular structure' to")
+    print(f"  'fully random modular diffs' occurs around round {first_no_modular or '??'}.")
+    print(f"  The gap between {first_no_modular or '??'} and 31 is bridged by sophisticated")
+    print(f"  multi-step message modification, which can extend control by ~5-10")
+    print(f"  rounds beyond what naive differentials can reach.")
     print()
 
     total_time = time.time() - t_start
