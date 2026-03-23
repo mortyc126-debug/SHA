@@ -330,5 +330,100 @@ rank(B) = 4, ker(B) = {d, h, f⊕g, a⊕b⊕c}  [CORRECTED: was 5]
 
 ---
 
+## 12. Сессия Weapon++ (март 2026): Все инструменты атаки
+
+### 12.1 Арсенал (8 weapons)
+
+| # | Weapon | Файл | Метод |
+|---|--------|------|-------|
+| 1 | Algebraic degree | `weapon_algebraic.py` | Cube attack: ANF degree через суммы по подпространствам |
+| 2 | HODF | `weapon_hodf.py` | Higher-order differential + filtering |
+| 3 | Bias amplification | `weapon_bias_amp.py` | Линейные/квадратичные приближения |
+| 4 | Differential path | `weapon_diffpath.py` | Автоматический поиск дифференциальных путей |
+| 5 | Local collision v2 | `weapon_localcol_v2.py` | Multi-step local collision (3-4 steps) |
+| 6 | Cube v2 | `weapon_cube_v2.py` | Cube attack dim 8-12 с контролем false positive |
+| 7 | Near-collision v2 | `weapon_nearcol_v2.py` | Birthday + filtering для near-collision |
+| 8 | Combined v3 | `weapon_combined_v3.py` | Fisher 4-test (исправленный chi²) |
+
+### 12.2 Ключевые результаты
+
+**Weapon 1 (Algebraic):** Cube attack работает через 6 раундов. При 7+ — степень
+полная, cube суммы неотличимы от random.
+
+**Weapon 5 (Local col v2):** 3-4 step local collision = zero gain. Потолок: 2 раунда.
+P(e≤3) ≈ 49% для двухраундовой цепочки.
+
+**Weapon 6 (Cube v2):** [CORRECTED] v1 давала false positive из-за сравнения
+с неправильным null. С правильным контролем: cube dead при ≥7 раундов.
+
+**Weapon 7 (Near-col v2):** Best HW=17 при 4 раундах. Birthday/filtering marginal.
+
+**Weapon 8 (Combined v3):** [CRITICAL BUG FOUND AND FIXED]
+
+### 12.3 Обнаруженный баг: KS-тест на дискретных данных
+
+**v2 утверждала**: все раунды 8-12 «различимы» с p ≈ 0.
+**v3 показала**: это был артефакт.
+
+**Баг:** `scipy.stats.kstest` предполагает непрерывное распределение.
+Hamming weight — дискретная величина. KS-тест систематически over-rejects:
+
+```
+ТЕСТ НУЛЕВОЙ ГИПОТЕЗЫ (random oracle):
+  KS-тест:   20/20 проб дали p < 10^{-70}  ← ЛОЖНОЕ СРАБАТЫВАНИЕ
+  Chi²-тест: 0/10 проб дали p < 0.05        ← КОРРЕКТНО
+```
+
+**Исправление:** замена KS на chi-squared goodness-of-fit с binning хвостов.
+
+### 12.4 Исправленные результаты (chi² тест)
+
+```
+Раунд | Differential | HO-Diff  | LinBias  | Combined | Вердикт
+──────|──────────────|──────────|──────────|──────────|──────────────
+  2   |  p ≈ 0       | p ≈ 0    | p=0.30   | p ≈ 0    | DISTINGUISHED
+  3   |  p ≈ 0       | p ≈ 0    | p=0.79   | p ≈ 0    | DISTINGUISHED
+  4   |  p=0.04      | p=0.81   | p=0.37   | p=0.35   | random-like
+  5   |  p=0.84      | p=0.77   | p=1.00   | p=0.99   | random-like
+  6+  |  p > 0.08    | p > 0.01 | p > 0.02 | p > 0.01 | random-like
+```
+
+**Вывод:** SHA-256 неотличима от random oracle при ≥ 4 раундах
+(с 10K-20K запросами). Раунды 2-3 чётко различимы по differential
+и higher-order тестам.
+
+### 12.5 Обновлённая карта безопасности
+
+```
+МЕТОД                         ДОКАЗАННЫЙ ПОТОЛОК    СТОИМОСТЬ
+─────────────────────────────────────────────────────────────
+Distinguisher (chi² verified):  3 раунда             O(10K)
+Near-collision (HW=17):         4 раунда             O(1K)
+Local collision (2-step):       2 раунда             O(1)
+Wang chain (De=0):              16 раундов           O(1)
+Free words (De17-20=0):         20 раундов           O(2^64)
+Single barrier (r21+):          +1 раунд             O(2^32)
+Full collision (64R):           ≥ 2^128              birthday
+─────────────────────────────────────────────────────────────
+State-of-the-art (Li et al.):   31 раундов           practical
+Semi-free-start (Li et al.):    39 раундов           120 сек
+```
+
+### 12.6 Методологический урок #8
+
+**KS-тест ≠ универсальный тест.** Для дискретных данных (HW, подсчёты)
+ВСЕГДА использовать chi-squared или exact multinomial тест. KS-тест
+даёт p → 0 на любых дискретных данных, независимо от реального распределения.
+
+**Правило верификации:** перед любым статистическим тестом — проверить
+null hypothesis на заведомо случайных данных. Если null отклоняется —
+тест сломан, не данные.
+
+### 12.7 Файлы сессии Weapon++
+8 weapons (`weapon_*.py`), верификация (`verify_combined_v2.py`,
+`verify_combined_v2_fix.py`), corrected v3 (`weapon_combined_v3.py`).
+
+---
+
 *SHA-256 Differential Cryptanalysis Research | March 2026 | Claude Opus 4.6*
-*Updated with combinatorial synthesis session and full audit corrections*
+*Updated with Weapon++ session: 8 attack tools, KS-test bug discovery, corrected results*
