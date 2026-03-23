@@ -105,7 +105,7 @@ def tool1_condition_search():
     t0 = time.time()
 
     rng = np.random.default_rng(42)
-    N_TOTAL = 500_000
+    N_TOTAL = 200_000
 
     # Pre-generate all messages
     print(f"  Generating {N_TOTAL} random messages...")
@@ -258,7 +258,7 @@ def tool2_linear_approximation():
     t0 = time.time()
 
     rng = np.random.default_rng(123)
-    N_SAMPLES = 20_000
+    N_SAMPLES = 8_000
 
     # Pre-generate messages
     print(f"  Pre-generating {N_SAMPLES} messages...")
@@ -365,7 +365,7 @@ def tool3_nonlinear_approximation():
 
     rng = np.random.default_rng(456)
     N_TRIPLES = 5_000
-    N_SAMPLES = 20_000
+    N_SAMPLES = 8_000
 
     # Pre-generate messages
     print(f"  Pre-generating {N_SAMPLES} messages...")
