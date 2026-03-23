@@ -1,0 +1,250 @@
+=== TASK 8: 17-round Wang collision search (v2) ===
+Searching 10 sets × 2^32 candidates, 4 threads
+Expected hits: ~10 (Poisson, some sets may miss)
+
+  [HIT] Set 0: w0=0xc44a2faf (total 1/10)
+  [HIT] Set 7: w0=0x45e372ab (total 2/10)
+  [HIT] Set 2: w0=0xdac940c8 (total 3/10)
+  [HIT] Set 3: w0=0xdce1bbef (total 4/10)
+  [HIT] Set 5: w0=0x64a7b6c5 (total 5/10)
+  [HIT] Set 8: w0=0x70dc9cf0 (total 6/10)
+  [HIT] Set 6: w0=0x3892d000 (total 7/10)
+
+=== RESULTS ===
+Total iterations: 26797130775 (1070.5s, 25.0 M/s)
+Pairs found: 7/10
+
+--- PAIR 0 (w0=0xc44a2faf) ---
+  Round-by-round δe:
+    δe[ 1]=0x00008000 HW=1
+    δe[ 2]=0x00000000 HW=0 <<<
+    δe[ 3]=0x00000000 HW=0 <<<
+    δe[ 4]=0x00000000 HW=0 <<<
+    δe[ 5]=0x00000000 HW=0 <<<
+    δe[ 6]=0x00000000 HW=0 <<<
+    δe[ 7]=0x00000000 HW=0 <<<
+    δe[ 8]=0x00000000 HW=0 <<<
+    δe[ 9]=0x00000000 HW=0 <<<
+    δe[10]=0x00000000 HW=0 <<<
+    δe[11]=0x00000000 HW=0 <<<
+    δe[12]=0x00000000 HW=0 <<<
+    δe[13]=0x00000000 HW=0 <<<
+    δe[14]=0x00000000 HW=0 <<<
+    δe[15]=0x00000000 HW=0 <<<
+    δe[16]=0x00000000 HW=0 <<<
+    δe[17]=0x00000000 HW=0 <<<
+    δe[18]=0xc6bfa194 HW=17
+    δe[19]=0xf5b3410b HW=16
+    δe[20]=0xf51c618a HW=15
+    δe[21]=0xb7fb2085 HW=17
+    δe[64]=0x5cfdf89d HW=21
+  δe[2..17] zeros: 16/16
+  hash_n = 5bbf47d9d7de60cb3fab072c52baac0a9c9b478e27ad53a8377352960fefc4f3
+  hash_f = 6e95083b0dcadd22e16c416d36acfb70f999402b83a579633f5a33057b0ce960
+  δhash  = 352a4fe2da14bde9dec746416416577a650207a5a4082acb0829619374e32d93
+  HW(δhash) = 118/256
+  Wn = c44a2faf d0608547 58d94efd 7e17c2ce 48e11f9c 4362dbfd ee829579 c839b85f 0e9c6335 f60cd2ed 9fb10d9e 43dcd471 0cf554a0 10569bad 4277b0d3 5b77a574 
+  Wf = c44aafaf d0a08737 58d8cefd 7e17c2ce 48e01f9c 4562fc01 f7616d81 84c0d544 17ca3c7f 542529a9 0df5f90e aed128ff 9791618d cae255c8 8040a80d a33d7c67 
+
+--- PAIR 2 (w0=0xdac940c8) ---
+  Round-by-round δe:
+    δe[ 1]=0x00008000 HW=1
+    δe[ 2]=0x00000000 HW=0 <<<
+    δe[ 3]=0x00000000 HW=0 <<<
+    δe[ 4]=0x00000000 HW=0 <<<
+    δe[ 5]=0x00000000 HW=0 <<<
+    δe[ 6]=0x00000000 HW=0 <<<
+    δe[ 7]=0x00000000 HW=0 <<<
+    δe[ 8]=0x00000000 HW=0 <<<
+    δe[ 9]=0x00000000 HW=0 <<<
+    δe[10]=0x00000000 HW=0 <<<
+    δe[11]=0x00000000 HW=0 <<<
+    δe[12]=0x00000000 HW=0 <<<
+    δe[13]=0x00000000 HW=0 <<<
+    δe[14]=0x00000000 HW=0 <<<
+    δe[15]=0x00000000 HW=0 <<<
+    δe[16]=0x00000000 HW=0 <<<
+    δe[17]=0x00000000 HW=0 <<<
+    δe[18]=0x7f8739c6 HW=19
+    δe[19]=0x09f29dae HW=17
+    δe[20]=0x8aacc687 HW=15
+    δe[21]=0x10e313c6 HW=13
+    δe[64]=0x1473b7e3 HW=18
+  δe[2..17] zeros: 16/16
+  hash_n = 392199f386dfa264bb88b789e36cda74cc3b0f0866c4c6098d98122f2ca6b8a0
+  hash_f = a920c99c5251b4b4c7b26fdd74870f2fe0aec6ebc98a98816a4df807fdb5feeb
+  δhash  = 9001506fd48e16d07c3ad85497ebd55b2c95c9e3af4e5e88e7d5ea28d113464b
+  HW(δhash) = 127/256
+  Wn = dac940c8 0bcda727 c505d498 3a490171 80a14835 ead33ecd 18721f52 4d1e97da 5d19a148 5adf7e06 24da927c d976b88d e0cdf8ee 0a46eda8 6f5fa77f 1081041d 
+  Wf = dac9c0c8 0b8da937 c5055498 3a490171 80a04835 f0d15ed1 f2a63634 de8d78fb d6f57af9 aabcd309 4b90524a b6179239 1359de12 fac33c0f ec3ff8ad 4a974465 
+
+--- PAIR 3 (w0=0xdce1bbef) ---
+  Round-by-round δe:
+    δe[ 1]=0xffff8000 HW=17
+    δe[ 2]=0x00000000 HW=0 <<<
+    δe[ 3]=0x00000000 HW=0 <<<
+    δe[ 4]=0x00000000 HW=0 <<<
+    δe[ 5]=0x00000000 HW=0 <<<
+    δe[ 6]=0x00000000 HW=0 <<<
+    δe[ 7]=0x00000000 HW=0 <<<
+    δe[ 8]=0x00000000 HW=0 <<<
+    δe[ 9]=0x00000000 HW=0 <<<
+    δe[10]=0x00000000 HW=0 <<<
+    δe[11]=0x00000000 HW=0 <<<
+    δe[12]=0x00000000 HW=0 <<<
+    δe[13]=0x00000000 HW=0 <<<
+    δe[14]=0x00000000 HW=0 <<<
+    δe[15]=0x00000000 HW=0 <<<
+    δe[16]=0x00000000 HW=0 <<<
+    δe[17]=0x00000000 HW=0 <<<
+    δe[18]=0xfd5a583e HW=19
+    δe[19]=0xa3074e91 HW=14
+    δe[20]=0x3ba13e32 HW=16
+    δe[21]=0xc600bc62 HW=12
+    δe[64]=0x1407c44c HW=11
+  δe[2..17] zeros: 16/16
+  hash_n = 77a5d3350703d861596171d0679786443b07b9c407aa48fec989ae29b1612785
+  hash_f = b453afb0ea317f11583871d430e9786b4f0f7e10d47f10a02d2fbcbff2110838
+  δhash  = c3f67c85ed32a77001590004577efe2f7408c7d4d3d5585ee4a6129643702fbd
+  HW(δhash) = 127/256
+  Wn = dce1bbef 33e016da 34be36cb b22d4b03 6c467669 ba4dff55 788831b6 8e53c47f 9fdd579b 6fda7e54 5f55e7a1 322d20b5 a450a3a8 bb2561cb 748d4e1a f71f2224 
+  Wf = dce13bef 33a018ea 34beb6cb b22dcb03 6c477669 c8505f71 8faca9da e27a2d9f 754243e3 962d6389 b71ef918 592382df 0effd9fe aec94b6c b5a2d0a5 9b1f5402 
+
+--- PAIR 5 (w0=0x64a7b6c5) ---
+  Round-by-round δe:
+    δe[ 1]=0xffff8000 HW=17
+    δe[ 2]=0x00000000 HW=0 <<<
+    δe[ 3]=0x00000000 HW=0 <<<
+    δe[ 4]=0x00000000 HW=0 <<<
+    δe[ 5]=0x00000000 HW=0 <<<
+    δe[ 6]=0x00000000 HW=0 <<<
+    δe[ 7]=0x00000000 HW=0 <<<
+    δe[ 8]=0x00000000 HW=0 <<<
+    δe[ 9]=0x00000000 HW=0 <<<
+    δe[10]=0x00000000 HW=0 <<<
+    δe[11]=0x00000000 HW=0 <<<
+    δe[12]=0x00000000 HW=0 <<<
+    δe[13]=0x00000000 HW=0 <<<
+    δe[14]=0x00000000 HW=0 <<<
+    δe[15]=0x00000000 HW=0 <<<
+    δe[16]=0x00000000 HW=0 <<<
+    δe[17]=0x00000000 HW=0 <<<
+    δe[18]=0xa5da1744 HW=15
+    δe[19]=0xc15ed889 HW=15
+    δe[20]=0x1473ca65 HW=15
+    δe[21]=0x7c52aeb7 HW=19
+    δe[64]=0xd981604e HW=13
+  δe[2..17] zeros: 16/16
+  hash_n = e98080a61cc5ff0cf17f2bd864a636593a4f789a5e846e93dbd8f17a031c99b2
+  hash_f = 04ebdbc74195614b8e80477b034a5c2613d0d8e8774659ef7a17058bd45d66f9
+  δhash  = ed6b5b615d509e477fff6ca367ec6a7f299fa07229c2377ca1cff4f1d741ff4b
+  HW(δhash) = 149/256
+  Wn = 64a7b6c5 600bea60 680a0a34 69971df6 eb776d3c 78835e34 8d44859c 3578d558 41cabc84 ec4b5b9d 0c226dcc 8de150dd e680d78c 397d1f2a 9324db63 bc14f2e0 
+  Wf = 64a736c5 604be850 680a0a34 69971df6 eb786d3c 3a73fec0 21dd6152 2840a832 771124fe a22126a4 e8c16094 67b73bef 3a670dab 7bb23e58 12518149 4bba099a 
+
+--- PAIR 6 (w0=0x3892d000) ---
+  Round-by-round δe:
+    δe[ 1]=0xffff8000 HW=17
+    δe[ 2]=0x00000000 HW=0 <<<
+    δe[ 3]=0x00000000 HW=0 <<<
+    δe[ 4]=0x00000000 HW=0 <<<
+    δe[ 5]=0x00000000 HW=0 <<<
+    δe[ 6]=0x00000000 HW=0 <<<
+    δe[ 7]=0x00000000 HW=0 <<<
+    δe[ 8]=0x00000000 HW=0 <<<
+    δe[ 9]=0x00000000 HW=0 <<<
+    δe[10]=0x00000000 HW=0 <<<
+    δe[11]=0x00000000 HW=0 <<<
+    δe[12]=0x00000000 HW=0 <<<
+    δe[13]=0x00000000 HW=0 <<<
+    δe[14]=0x00000000 HW=0 <<<
+    δe[15]=0x00000000 HW=0 <<<
+    δe[16]=0x00000000 HW=0 <<<
+    δe[17]=0x00000000 HW=0 <<<
+    δe[18]=0x2f5c4ef8 HW=18
+    δe[19]=0x06f3578e HW=17
+    δe[20]=0xa5c71403 HW=13
+    δe[21]=0x3f500b11 HW=13
+    δe[64]=0x4284878b HW=12
+  δe[2..17] zeros: 16/16
+  hash_n = c35bc52bde01664c825be882ebf3000bb091cba566be831c24c88fc757002b57
+  hash_f = 4fc556c52cb3563afa7ab585e981f88ff316533004a2bfaddce91bb1d36de12e
+  δhash  = 8c9e93eef2b2307678215d070272f88443879895621c3cb1f8219476846dca79
+  HW(δhash) = 119/256
+  Wn = 3892d000 96d26373 f2e2db12 5afab83a 9893ea88 eee681c4 0ffc0f0d c95f01a0 f72abdb5 72d33846 2880b128 e7c0c89b 6ae8188d 80d9322f ebf87acf 3ac01729 
+  Wf = 38925000 97126183 f2e35b12 5afab83a 9894ea88 ece6a1c8 0d9b46f7 1dfaff9e 42c817bf e55bf385 6758d854 d38a7af5 4c3c0b28 42b127e0 c5fd37ad 6cd12f9f 
+
+--- PAIR 7 (w0=0x45e372ab) ---
+  Round-by-round δe:
+    δe[ 1]=0x00008000 HW=1
+    δe[ 2]=0x00000000 HW=0 <<<
+    δe[ 3]=0x00000000 HW=0 <<<
+    δe[ 4]=0x00000000 HW=0 <<<
+    δe[ 5]=0x00000000 HW=0 <<<
+    δe[ 6]=0x00000000 HW=0 <<<
+    δe[ 7]=0x00000000 HW=0 <<<
+    δe[ 8]=0x00000000 HW=0 <<<
+    δe[ 9]=0x00000000 HW=0 <<<
+    δe[10]=0x00000000 HW=0 <<<
+    δe[11]=0x00000000 HW=0 <<<
+    δe[12]=0x00000000 HW=0 <<<
+    δe[13]=0x00000000 HW=0 <<<
+    δe[14]=0x00000000 HW=0 <<<
+    δe[15]=0x00000000 HW=0 <<<
+    δe[16]=0x00000000 HW=0 <<<
+    δe[17]=0x00000000 HW=0 <<<
+    δe[18]=0x766d4dda HW=19
+    δe[19]=0x7cb0c275 HW=16
+    δe[20]=0xb9dab414 HW=16
+    δe[21]=0xb45fe228 HW=16
+    δe[64]=0x50c6118f HW=13
+  δe[2..17] zeros: 16/16
+  hash_n = 5b5fe2175ff74652ea4da257e07f729c4001771f1a050ddc890eb81823b5b9b4
+  hash_f = 8c9573e8826696da7d435a68557bdaea90c788ae4830af87d7d0242996ae82ec
+  δhash  = d7ca91ffdd91d088970ef83fb504a876d0c6ffb15235a25b5ede9c31b51b3b58
+  HW(δhash) = 137/256
+  Wn = 45e372ab b04aac5d 6e8a9327 59ff97f3 798e437e ff4e5523 a967a082 a5066353 760998ef 4bb1a49e b4fcf645 165c7d39 f5fc1b67 261be93a 6d4fe466 02378207 
+  Wf = 45e3f2ab b08aae6d 6e8a9327 59ff17f3 798d437e f14c752f fb99f723 2622919b a8c043a8 0052b2e7 42012ba2 bfb8dd2f 3cb65d3a e5c68bb2 ef471cd3 006b0a79 
+
+--- PAIR 8 (w0=0x70dc9cf0) ---
+  Round-by-round δe:
+    δe[ 1]=0xffff8000 HW=17
+    δe[ 2]=0x00000000 HW=0 <<<
+    δe[ 3]=0x00000000 HW=0 <<<
+    δe[ 4]=0x00000000 HW=0 <<<
+    δe[ 5]=0x00000000 HW=0 <<<
+    δe[ 6]=0x00000000 HW=0 <<<
+    δe[ 7]=0x00000000 HW=0 <<<
+    δe[ 8]=0x00000000 HW=0 <<<
+    δe[ 9]=0x00000000 HW=0 <<<
+    δe[10]=0x00000000 HW=0 <<<
+    δe[11]=0x00000000 HW=0 <<<
+    δe[12]=0x00000000 HW=0 <<<
+    δe[13]=0x00000000 HW=0 <<<
+    δe[14]=0x00000000 HW=0 <<<
+    δe[15]=0x00000000 HW=0 <<<
+    δe[16]=0x00000000 HW=0 <<<
+    δe[17]=0x00000000 HW=0 <<<
+    δe[18]=0x832eb0f9 HW=16
+    δe[19]=0x539b1eb5 HW=18
+    δe[20]=0x91546677 HW=16
+    δe[21]=0x8bc3cc75 HW=17
+    δe[64]=0xb28325d8 HW=14
+  δe[2..17] zeros: 16/16
+  hash_n = b3f5a42a44bdb5ce2dcf7ebb5a8d0bf25343f36f8be5f1ccedcf87156768097a
+  hash_f = d2e73352b2f6bd665d01d3803a30f4a605c719472e0d2be49027ed76d6d78db1
+  δhash  = 61129778f64b08a870cead3b60bdff545684ea28a5e8da287de86a63b1bf84cb
+  HW(δhash) = 129/256
+  Wn = 70dc9cf0 e42e4aed ab55b8d9 d566f160 d9feb998 187b4f5b c7bb8276 118fbd77 fa264e13 7b2ef8b6 02d47bea 61faf0b6 e528b939 12142b68 54a6799d c163e670 
+  Wf = 70dc1cf0 e0ed44dd ab57b8d9 d56a7160 d9ffb998 1e7b6f57 cb97da48 af03ee9e 173f6a1e 24d8fe7b 6ced029e 001ce133 92f976da e99238f1 b89bcb7e 0dff8ef9 
+
+=== SUMMARY ===
+  Set 0: HW(δhash) = 118
+  Set 2: HW(δhash) = 127
+  Set 3: HW(δhash) = 127
+  Set 5: HW(δhash) = 149
+  Set 6: HW(δhash) = 119
+  Set 7: HW(δhash) = 137
+  Set 8: HW(δhash) = 129
+  Min HW = 118, Max HW = 149
+  Random expectation: 128
