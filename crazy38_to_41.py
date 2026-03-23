@@ -108,7 +108,7 @@ def crazy38():
     print("each round. 'Holes' = impossible differentials.")
     print()
 
-    NUM_SAMPLES = 100_000
+    NUM_SAMPLES = 50_000
     MAX_ROUNDS = 8
 
     # We truncate Da and De to their top 8 bits for feasibility
@@ -210,7 +210,7 @@ def crazy39():
     print("registers. Find masks with |correlation| < threshold.")
     print()
 
-    NUM_SAMPLES = 100_000
+    NUM_SAMPLES = 50_000
     THRESHOLD = 0.001
 
     def parity(x, mask):
@@ -219,17 +219,11 @@ def crazy39():
 
     # Generate HW-1 masks (32 single-bit masks)
     hw1_masks = [1 << i for i in range(32)]
-    # Generate HW-2 masks (496 two-bit masks)
-    hw2_masks = []
-    for i in range(32):
-        for j in range(i + 1, 32):
-            hw2_masks.append((1 << i) | (1 << j))
-
-    all_masks = hw1_masks + hw2_masks
-    print(f"  Testing {len(all_masks)} masks (32 HW-1 + {len(hw2_masks)} HW-2)")
+    all_masks = hw1_masks
+    print(f"  Testing {len(all_masks)} masks (32 HW-1)")
     print()
 
-    for num_rounds in [1, 2, 3, 4]:
+    for num_rounds in [1, 2]:
         print(f"  --- {num_rounds}-round SHA-256 ---")
 
         # Precompute samples
@@ -339,7 +333,7 @@ def crazy40():
     print("backward differential (rounds 17-20) at the 'switch' point.")
     print()
 
-    NUM_SAMPLES = 50_000
+    NUM_SAMPLES = 10_000
 
     def run_rounds(st, W, start_round, end_round):
         cur = list(st)
@@ -436,7 +430,7 @@ def crazy40():
     alpha = 1 << best_fwd_bit
     gamma = 1 << best_bwd_bit
     boomerang_success = 0
-    NUM_BOOM = 30_000
+    NUM_BOOM = 10_000
 
     for _ in range(NUM_BOOM):
         W = [rand32() for _ in range(22)]
@@ -491,7 +485,7 @@ def crazy41():
     print("Measure Hamming distance of the 'rotational error'.")
     print()
 
-    NUM_SAMPLES = 100_000
+    NUM_SAMPLES = 10_000
 
     def sha256_hash(msg_words):
         """Full SHA-256 of 16 32-bit words (512-bit block), return 8 words."""
