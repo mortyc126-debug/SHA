@@ -243,6 +243,14 @@ def tool1_condition_search():
 # TOOL 2: Linear Approximation Search (Matsui's Algorithm 1 for SHA-256)
 # ============================================================================
 
+def extract_bits_matrix(values, n_bits=32):
+    """Extract individual bits from array of uint32 values. Shape: (N, n_bits)."""
+    values = np.asarray(values, dtype=np.uint64)
+    bits = np.zeros((len(values), n_bits), dtype=np.int8)
+    for b in range(n_bits):
+        bits[:, b] = (values >> b) & 1
+    return bits
+
 def tool2_linear_approximation():
     print("\n" + "=" * 72)
     print("TOOL 2: Linear Approximation Search (Matsui Algorithm 1)")
@@ -250,10 +258,9 @@ def tool2_linear_approximation():
     t0 = time.time()
 
     rng = np.random.default_rng(123)
-    N_MASKS = 10_000      # random mask pairs to test
-    N_SAMPLES = 20_000    # samples per mask pair
+    N_SAMPLES = 20_000
 
-    # Pre-generate messages for reuse
+    # Pre-generate messages
     print(f"  Pre-generating {N_SAMPLES} messages...")
     msgs = [random_msg(rng) for _ in range(N_SAMPLES)]
 
@@ -268,68 +275,68 @@ def tool2_linear_approximation():
         for m in msgs:
             outputs.append(sha256_t_rounds(m, t_rounds))
 
-        # We focus on single-bit masks for efficiency:
-        # input_mask: bit position in W[0] (0..31)
-        # output_mask: bit position in e-register = state[4] (0..31)
-        # Also try a-register = state[0]
-        #
-        # Correlation = 2 * Pr[input_bit XOR output_bit = 0] - 1
+        # Extract bit matrices (vectorized)
+        w0_vals = np.array([m[0] for m in msgs], dtype=np.uint64)
+        w1_vals = np.array([m[1] for m in msgs], dtype=np.uint64)
+        e_vals = np.array([o[4] for o in outputs], dtype=np.uint64)
+        a_vals = np.array([o[0] for o in outputs], dtype=np.uint64)
+
+        w0_bits = extract_bits_matrix(w0_vals)  # (N, 32)
+        w1_bits = extract_bits_matrix(w1_vals)
+        e_bits = extract_bits_matrix(e_vals)
+        a_bits = extract_bits_matrix(a_vals)
 
         best_bias = 0.0
         best_info = None
 
-        # Test all 32x32 = 1024 single-bit pairs for W[0]->e and W[0]->a
-        for reg_name, reg_idx in [("e", 4), ("a", 0)]:
-            for in_bit in range(32):
-                for out_bit in range(32):
-                    agree = 0
-                    for idx in range(N_SAMPLES):
-                        ib = (msgs[idx][0] >> in_bit) & 1
-                        ob = (outputs[idx][reg_idx] >> out_bit) & 1
-                        agree += (ib ^ ob ^ 1)  # 1 if equal
-                    corr = abs(2.0 * agree / N_SAMPLES - 1.0)
-                    if corr > best_bias:
-                        best_bias = corr
-                        best_info = (f"W0[{in_bit}]", f"{reg_name}[{out_bit}]", corr)
+        # Test all single-bit pairs: W[0] or W[1] -> e or a
+        # Correlation = |mean((-1)^(in_bit XOR out_bit))| = |1 - 2*mean(in^out)|
+        for w_name, w_bits in [("W0", w0_bits), ("W1", w1_bits)]:
+            for reg_name, out_bits in [("e", e_bits), ("a", a_bits)]:
+                # Compute all 32x32 correlations at once using matrix ops
+                # xor[i,j] = w_bits[:,i] ^ out_bits[:,j] -> shape (N, 32, 32) too big
+                # Instead: corr_matrix[i,j] = |mean((-1)^(w[:,i] ^ o[:,j]))|
+                # = |mean(1 - 2*(w[:,i]^o[:,j]))| = |1 - 2*mean(w[:,i]^o[:,j])|
+                # mean(w[:,i]^o[:,j]) = mean(w[:,i]) + mean(o[:,j]) - 2*mean(w[:,i]*o[:,j])
+                # Use: (-1)^(a^b) = (-1)^a * (-1)^b = (1-2a)(1-2b)
+                # So mean((-1)^(a^b)) = mean((1-2w)(1-2o))
+                # = 1 - 2*mean(w) - 2*mean(o) + 4*mean(w*o)
+                # Vectorized: signed_w = 1 - 2*w_bits, signed_o = 1 - 2*out_bits
+                # corr_matrix = (signed_w.T @ signed_o) / N
+                signed_w = (1 - 2 * w_bits.astype(np.float64))  # (N, 32)
+                signed_o = (1 - 2 * out_bits.astype(np.float64))  # (N, 32)
+                corr_matrix = np.abs(signed_w.T @ signed_o) / N_SAMPLES  # (32, 32)
 
-        # Also test W[1]->e, W[1]->a
-        for reg_name, reg_idx in [("e", 4), ("a", 0)]:
-            for in_bit in range(32):
-                for out_bit in range(32):
-                    agree = 0
-                    for idx in range(N_SAMPLES):
-                        ib = (msgs[idx][1] >> in_bit) & 1
-                        ob = (outputs[idx][reg_idx] >> out_bit) & 1
-                        agree += (ib ^ ob ^ 1)
-                    corr = abs(2.0 * agree / N_SAMPLES - 1.0)
-                    if corr > best_bias:
-                        best_bias = corr
-                        best_info = (f"W1[{in_bit}]", f"{reg_name}[{out_bit}]", corr)
+                max_idx = np.unravel_index(np.argmax(corr_matrix), corr_matrix.shape)
+                max_corr = corr_matrix[max_idx]
+                if max_corr > best_bias:
+                    best_bias = max_corr
+                    best_info = (f"{w_name}[{max_idx[0]}]", f"{reg_name}[{max_idx[1]}]", float(max_corr))
 
-        # Multi-bit input masks: XOR of 2 input bits -> 1 output bit
-        # Sample random pairs
-        n_multi = min(N_MASKS, 5000)
+        # Multi-bit: XOR of 2 input bits -> 1 output bit (sample 5000 random)
+        n_multi = 5000
         for _ in range(n_multi):
             w_idx1 = int(rng.integers(0, 2))
             b1 = int(rng.integers(0, 32))
             w_idx2 = int(rng.integers(0, 2))
             b2 = int(rng.integers(0, 32))
-            reg_idx = int(rng.choice([0, 4]))
-            out_bit = int(rng.integers(0, 32))
-            reg_name = "a" if reg_idx == 0 else "e"
 
-            agree = 0
-            for idx in range(N_SAMPLES):
-                ib = ((msgs[idx][w_idx1] >> b1) & 1) ^ ((msgs[idx][w_idx2] >> b2) & 1)
-                ob = (outputs[idx][reg_idx] >> out_bit) & 1
-                agree += (ib ^ ob ^ 1)
-            corr = abs(2.0 * agree / N_SAMPLES - 1.0)
-            if corr > best_bias:
-                best_bias = corr
-                best_info = (f"W{w_idx1}[{b1}]^W{w_idx2}[{b2}]",
-                             f"{reg_name}[{out_bit}]", corr)
+            wb1 = w0_bits if w_idx1 == 0 else w1_bits
+            wb2 = w0_bits if w_idx2 == 0 else w1_bits
+            in_xor = wb1[:, b1] ^ wb2[:, b2]  # (N,)
+            signed_in = 1.0 - 2.0 * in_xor.astype(np.float64)
 
-        epsilon = best_bias / 2.0  # bias eps = (corr)/2 since corr = 2*eps
+            for reg_name, out_bits in [("e", e_bits), ("a", a_bits)]:
+                signed_o = 1.0 - 2.0 * out_bits.astype(np.float64)
+                corrs = np.abs(signed_in @ signed_o) / N_SAMPLES  # (32,)
+                best_ob = int(np.argmax(corrs))
+                corr = float(corrs[best_ob])
+                if corr > best_bias:
+                    best_bias = corr
+                    best_info = (f"W{w_idx1}[{b1}]^W{w_idx2}[{b2}]",
+                                 f"{reg_name}[{best_ob}]", corr)
+
+        epsilon = best_bias / 2.0
         print(f"  Best linear approx: {best_info[0]} -> {best_info[1]}")
         print(f"    correlation = {best_info[2]:.6f}, epsilon = {epsilon:.6f}")
         print(f"    Distinguisher queries ~ {1.0/max(epsilon**2, 1e-30):.1f}")
@@ -374,70 +381,68 @@ def tool3_nonlinear_approximation():
         for m in msgs:
             outputs.append(sha256_t_rounds(m, t_rounds))
 
-        # Extract W[0] bits and output bits as arrays for speed
-        w0_bits = np.zeros((N_SAMPLES, 32), dtype=np.int8)
-        e_bits = np.zeros((N_SAMPLES, 32), dtype=np.int8)
-        a_bits = np.zeros((N_SAMPLES, 32), dtype=np.int8)
-        for idx in range(N_SAMPLES):
-            w0 = msgs[idx][0]
-            for b in range(32):
-                w0_bits[idx, b] = (w0 >> b) & 1
-            e_bits[idx] = np.array([(outputs[idx][4] >> b) & 1 for b in range(32)], dtype=np.int8)
-            a_bits[idx] = np.array([(outputs[idx][0] >> b) & 1 for b in range(32)], dtype=np.int8)
+        # Extract bit matrices (vectorized)
+        w0_vals = np.array([m[0] for m in msgs], dtype=np.uint64)
+        e_vals = np.array([o[4] for o in outputs], dtype=np.uint64)
+        a_vals = np.array([o[0] for o in outputs], dtype=np.uint64)
+
+        w0_bits = extract_bits_matrix(w0_vals)  # (N, 32)
+        e_bits = extract_bits_matrix(e_vals)
+        a_bits = extract_bits_matrix(a_vals)
 
         best_quad_bias = 0.0
         best_quad_info = None
         best_lin_bias = 0.0
         best_lin_info = None
 
-        # First find best linear for comparison
-        for in_b in range(32):
-            for reg_name, out_arr in [("e", e_bits), ("a", a_bits)]:
-                for out_b in range(32):
-                    corr = abs(float(np.mean((-1.0) ** (w0_bits[:, in_b] ^ out_arr[:, out_b]))))
-                    if corr > best_lin_bias:
-                        best_lin_bias = corr
-                        best_lin_info = (f"W0[{in_b}]", f"{reg_name}[{out_b}]", corr)
+        # Best linear: use matrix multiply (vectorized)
+        signed_w = 1.0 - 2.0 * w0_bits.astype(np.float64)
+        for reg_name, out_bits in [("e", e_bits), ("a", a_bits)]:
+            signed_o = 1.0 - 2.0 * out_bits.astype(np.float64)
+            corr_matrix = np.abs(signed_w.T @ signed_o) / N_SAMPLES
+            max_idx = np.unravel_index(np.argmax(corr_matrix), corr_matrix.shape)
+            max_corr = float(corr_matrix[max_idx])
+            if max_corr > best_lin_bias:
+                best_lin_bias = max_corr
+                best_lin_info = (f"W0[{max_idx[0]}]", f"{reg_name}[{max_idx[1]}]", max_corr)
 
         # Quadratic: (W0[i] AND W0[j]) XOR output_bit k
-        # Sample random triples
-        tested = 0
+        # Sample random triples — vectorized inner loop
         for _ in range(N_TRIPLES):
             i = int(rng.integers(0, 32))
             j = int(rng.integers(0, 32))
             if i == j:
                 continue
-            k = int(rng.integers(0, 32))
-            reg_idx = int(rng.choice([0, 1]))  # 0 = e_bits, 1 = a_bits
-            reg_name = "e" if reg_idx == 0 else "a"
-            out_arr = e_bits if reg_idx == 0 else a_bits
+            quad_input = w0_bits[:, i] & w0_bits[:, j]  # (N,)
+            signed_q = 1.0 - 2.0 * quad_input.astype(np.float64)
 
-            quad_input = w0_bits[:, i] & w0_bits[:, j]
-            corr = abs(float(np.mean((-1.0) ** (quad_input ^ out_arr[:, k]))))
-            tested += 1
-
-            if corr > best_quad_bias:
-                best_quad_bias = corr
-                best_quad_info = (f"W0[{i}]&W0[{j}]", f"{reg_name}[{k}]", corr)
+            for reg_name, out_bits in [("e", e_bits), ("a", a_bits)]:
+                signed_o = 1.0 - 2.0 * out_bits.astype(np.float64)
+                corrs = np.abs(signed_q @ signed_o) / N_SAMPLES  # (32,)
+                best_k = int(np.argmax(corrs))
+                corr = float(corrs[best_k])
+                if corr > best_quad_bias:
+                    best_quad_bias = corr
+                    best_quad_info = (f"W0[{i}]&W0[{j}]", f"{reg_name}[{best_k}]", corr)
 
         # Also try: (W0[i] AND W0[j]) XOR W0[m] -> output bit k
         for _ in range(N_TRIPLES):
             i = int(rng.integers(0, 32))
             j = int(rng.integers(0, 32))
-            m = int(rng.integers(0, 32))
+            m_bit = int(rng.integers(0, 32))
             if i == j:
                 continue
-            k = int(rng.integers(0, 32))
-            reg_idx = int(rng.choice([0, 1]))
-            reg_name = "e" if reg_idx == 0 else "a"
-            out_arr = e_bits if reg_idx == 0 else a_bits
+            quad_input = (w0_bits[:, i] & w0_bits[:, j]) ^ w0_bits[:, m_bit]
+            signed_q = 1.0 - 2.0 * quad_input.astype(np.float64)
 
-            quad_input = (w0_bits[:, i] & w0_bits[:, j]) ^ w0_bits[:, m]
-            corr = abs(float(np.mean((-1.0) ** (quad_input ^ out_arr[:, k]))))
-
-            if corr > best_quad_bias:
-                best_quad_bias = corr
-                best_quad_info = (f"W0[{i}]&W0[{j}]^W0[{m}]", f"{reg_name}[{k}]", corr)
+            for reg_name, out_bits in [("e", e_bits), ("a", a_bits)]:
+                signed_o = 1.0 - 2.0 * out_bits.astype(np.float64)
+                corrs = np.abs(signed_q @ signed_o) / N_SAMPLES
+                best_k = int(np.argmax(corrs))
+                corr = float(corrs[best_k])
+                if corr > best_quad_bias:
+                    best_quad_bias = corr
+                    best_quad_info = (f"W0[{i}]&W0[{j}]^W0[{m_bit}]", f"{reg_name}[{best_k}]", corr)
 
         quad_eps = best_quad_bias / 2.0
         lin_eps = best_lin_bias / 2.0
