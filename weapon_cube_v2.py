@@ -26,7 +26,6 @@ Methodology:
 
 import random
 import time
-import math
 from collections import defaultdict
 
 # ── SHA-256 constants ──────────────────────────────────────────────
