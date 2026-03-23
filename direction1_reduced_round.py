@@ -270,72 +270,81 @@ def study_differential_propagation(max_rounds=40, n_samples=10000):
 def study_avalanche_completeness(max_rounds=40, n_samples=100):
     """
     For each round N, flip each of 32 bits in W[0], track which of the 8
-    output WORDS are affected. Build 8x32 dependency matrix, compute rank.
-    Also measure deviation of per-bit flip probabilities from ideal 0.5.
+    INTERNAL state words are affected (no feed-forward, so only the words
+    that the round function actually reaches will change).
+
+    Key metric: how many of 8 internal state words show ANY dependency on W[0].
+    Also measures MAD from ideal 0.5 flip probability.
     """
     print("=" * 80)
     print("STUDY 2: AVALANCHE COMPLETENESS (rounds 1-{})".format(max_rounds))
     print("=" * 80)
-    print(f"Samples per round per input bit: {n_samples}")
+    print(f"Samples per round: {n_samples}")
+    print(f"Using INTERNAL state (no feed-forward)")
     print()
 
     rng = np.random.default_rng(123)
 
     results = {}
-    full_rank_round = None
+    full_dep_round = None
 
     for N in range(1, max_rounds + 1):
-        # Track which output words are affected by each input bit
-        word_affected = np.zeros((8, 32), dtype=np.int32)
-        # Track per-bit flip rates for quality measure
-        bit_flip_total = np.zeros(256, dtype=np.float64)
+        # For each of 8 output words, track if it EVER differs across all trials+bits
+        word_ever_affected = np.zeros(8, dtype=np.int32)
+        # Per-bit flip probability tracking
+        flip_count_matrix = np.zeros((256, 32), dtype=np.int32)
 
         for trial in range(n_samples):
             W = random_w16(rng)
-            out_base = sha256_compress(W, IV, N)
+            out_base = sha256_internal(W, IV, N)
 
             for j in range(32):
                 W2 = list(W)
                 W2[0] ^= (1 << (31 - j))
-                out_flip = sha256_compress(W2, IV, N)
+                out_flip = sha256_internal(W2, IV, N)
 
                 for wi in range(8):
                     d = out_base[wi] ^ out_flip[wi]
                     if d != 0:
-                        word_affected[wi, j] += 1
-                    hw = bin(d).count('1')
-                    bit_flip_total[wi * 32: wi * 32 + 32] += np.array(
-                        [((d >> (31 - b)) & 1) for b in range(32)], dtype=np.float64)
+                        word_ever_affected[wi] = 1
+                    for b in range(32):
+                        if (d >> (31 - b)) & 1:
+                            flip_count_matrix[wi * 32 + b, j] += 1
 
-        # Word-level dependency
-        word_dep = (word_affected > 0).astype(np.int8)
-        n_word_deps = int(np.sum(word_dep))
+        n_words_affected = int(np.sum(word_ever_affected))
 
-        # Rank of the 8x32 word dependency matrix
-        rank_word = gf2_rank(word_dep)
+        # Compute rank of the 256x32 flip matrix (binarized)
+        binary_flip = (flip_count_matrix > 0).astype(np.int8)
+        # Transpose to get 32x256 and compute rank (max 32)
+        rank_cols = gf2_rank(binary_flip.T)
 
-        # Bit-level: average flip rate and deviation from ideal 0.5
-        flip_rates = bit_flip_total / (n_samples * 32)  # 32 input bits
-        mad_from_half = float(np.mean(np.abs(flip_rates - 0.5)))
-        n_active_bits = int(np.sum(flip_rates > 0.01))
+        # Flip rate quality
+        flip_rates = flip_count_matrix / n_samples
+        active_mask = flip_rates > 0.01
+        n_active_bits = int(np.sum(np.any(active_mask, axis=1)))
+        if np.any(active_mask):
+            active_rates = flip_rates[active_mask]
+            mad_from_half = float(np.mean(np.abs(active_rates - 0.5)))
+        else:
+            mad_from_half = 0.5
 
         results[N] = {
-            'rank': rank_word,
-            'n_word_deps': n_word_deps,
+            'n_words_affected': n_words_affected,
+            'rank': rank_cols,
             'n_active_bits': n_active_bits,
             'mad_from_half': mad_from_half,
         }
 
-        if full_rank_round is None and rank_word == 8:
-            full_rank_round = N
+        if full_dep_round is None and n_words_affected == 8:
+            full_dep_round = N
 
         if N <= 10 or N % 5 == 0:
-            print(f"  Round {N:2d}: word_rank={rank_word}/8  word_deps={n_word_deps:3d}/256  "
+            print(f"  Round {N:2d}: words_hit={n_words_affected}/8  col_rank={rank_cols:2d}/32  "
                   f"active_bits={n_active_bits:3d}/256  MAD={mad_from_half:.4f}")
 
-    print(f"\n  Full word-rank (8) first achieved at round: {full_rank_round}")
+    print(f"\n  All 8 internal words first affected at round: {full_dep_round}")
     print()
-    return results, full_rank_round
+    return results, full_dep_round
 
 
 # ─── Study 3: Algebraic Degree Estimation ───────────────────────────────────
