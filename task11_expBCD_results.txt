@@ -1,0 +1,312 @@
+================================================================================
+  ЗАДАНИЕ 11: Follow the Carry — Two Anomalies from Tomography
+  Experiments B, C, D
+================================================================================
+
+Loaded 7 pairs from task8_results.txt
+================================================================================
+EXPERIMENT B: δ-persistent bits analysis
+================================================================================
+
+--- Per-pair persistence counts ---
+(out of 256 state bits, 48 rounds checked)
+  Pair 0: pers>0.5: 141, pers>0.6: 33, pers>0.7: 0
+  Pair 1: pers>0.5: 155, pers>0.6: 55, pers>0.7: 0
+  Pair 2: pers>0.5: 126, pers>0.6: 35, pers>0.7: 0
+  Pair 3: pers>0.5: 134, pers>0.6: 34, pers>0.7: 0
+  Pair 4: pers>0.5: 153, pers>0.6: 38, pers>0.7: 1
+  Pair 5: pers>0.5: 111, pers>0.6: 35, pers>0.7: 0
+  Pair 6: pers>0.5: 131, pers>0.6: 35, pers>0.7: 0
+
+--- Bits with persistence > 0.7 (any pair) ---
+  Found 1 (pair,word,bit) with persistence > 0.7:
+    Pair 4: reg=h bit=16 persistence=0.708 (34/48)
+
+--- Cross-persistence (bits persistent across multiple pairs) ---
+  Cross-persistence distribution (how many of 7 pairs have pers>0.6):
+    cross=0: 96 bits
+    cross=1: 80 bits
+    cross=2: 59 bits
+    cross=3: 17 bits
+    cross=4: 4 bits
+
+  No bits with cross_persistence >= 5.
+
+  No bits persistent in all 7 pairs.
+
+--- Breakdown of bits with cross_persistence >= 3 ---
+  By register:
+    a: 1/32 bits
+    b: 2/32 bits
+    c: 3/32 bits
+    d: 1/32 bits
+    e: 1/32 bits
+    f: 3/32 bits
+    g: 3/32 bits
+    h: 7/32 bits
+  By bit position (high bits = 31..24, mid=23..8, low=7..0):
+    Low (0-7): 7 across all regs
+    Mid (8-23): 8
+    High (24-31): 6
+
+--- Random baseline (100 random Wang pairs) ---
+  Mean bits with pers>0.6 for random Wang: 28.8
+  Our 7 pairs: 33, 55, 35, 34, 38, 35, 35
+
+================================================================================
+EXPERIMENT C: Alternating cascade vs Wang carry agreement
+================================================================================
+
+  Alternating chain verification: 86/1500 (5.7%) correct δ=0
+
+    r |  Wang CA |   Alt CA | Diff(Alt-Wang)
+  ---------------------------------------------
+    0 | 0.9983 | 0.9983 | +0.0000
+    1 | 0.8390 | 0.8045 | -0.0345 *
+    2 | 0.9247 | 0.7179 | -0.2068 *
+    3 | 0.9017 | 0.8588 | -0.0429 *
+    4 | 0.8696 | 0.7226 | -0.1471 *
+    5 | 0.8604 | 0.7888 | -0.0716 *
+    6 | 0.8447 | 0.7295 | -0.1152 *
+    7 | 0.8325 | 0.7782 | -0.0543 *
+    8 | 0.8364 | 0.7411 | -0.0953 *
+    9 | 0.8356 | 0.7741 | -0.0615 *
+   10 | 0.8304 | 0.7222 | -0.1081 *
+   11 | 0.8363 | 0.7685 | -0.0678 *
+   12 | 0.8382 | 0.7171 | -0.1211 *
+   13 | 0.8356 | 0.7536 | -0.0820 *
+   14 | 0.8356 | 0.7067 | -0.1289 *
+   15 | 0.8416 | 0.7410 | -0.1006 *
+   16 | 0.8376 | 0.6736 | -0.1640 *
+   17 | 0.5964 | 0.5807 | -0.0157
+   18 | 0.5847 | 0.5839 | -0.0008
+   19 | 0.5740 | 0.5517 | -0.0223 *
+   20 | 0.5265 | 0.5343 | +0.0078
+   21 | 0.5209 | 0.5378 | +0.0168
+   22 | 0.5334 | 0.5361 | +0.0027
+   23 | 0.5444 | 0.5341 | -0.0104
+   24 | 0.5323 | 0.5320 | -0.0003
+   25 | 0.5294 | 0.5328 | +0.0034
+   26 | 0.5455 | 0.5576 | +0.0121
+   27 | 0.5411 | 0.5472 | +0.0061
+
+  Mean carry_agreement(1..16): Wang=0.8500, Alt=0.7499, Diff=-0.1001
+
+  Mean carry_agreement(17..25): Wang=0.5491, Alt=0.5470, Diff=-0.0021
+
+  Mean carry_agreement(18..40): Wang=0.5378, Alt=0.5398, Diff=+0.0020
+
+================================================================================
+EXPERIMENT D: Round-by-round healing analysis
+================================================================================
+
+--- Per-round new_diffs and healed_diffs (mean ± std) ---
+    r |    new |   healed |  ratio | heal>1.5 count
+  --------------------------------------------------
+    0 |    4.6 |      0.0 |  0.000 |              0
+    1 |   13.0 |      3.3 |  0.269 |              0
+    2 |   22.7 |      8.3 |  0.367 |              0
+    3 |   31.7 |     16.4 |  0.513 |              0
+    4 |   35.1 |     23.4 |  0.664 |              0
+    5 |   35.6 |     28.1 |  0.803 |              0
+    6 |   33.9 |     32.6 |  0.967 |              0
+    7 |   33.3 |     31.9 |  0.959 |              0
+    8 |   32.6 |     32.6 |  1.002 |              0
+    9 |   31.4 |     33.3 |  1.061 |              0
+   10 |   32.4 |     31.3 |  0.973 |              0
+   11 |   30.6 |     31.9 |  1.040 |              0
+   12 |   32.3 |     32.7 |  1.023 |              0
+   13 |   33.6 |     32.7 |  0.981 |              0
+   14 |   31.7 |     34.4 |  1.091 |              0
+   15 |   33.7 |     33.1 |  0.998 |              0
+   16 |   33.1 |     32.0 |  0.971 |              0
+   17 |   46.4 |     32.3 |  0.701 |              0
+   18 |   56.4 |     36.9 |  0.653 |              0
+   19 |   63.0 |     47.3 |  0.752 |              0
+   20 |   67.7 |     55.7 |  0.829 |              0
+   21 |   61.9 |     62.4 |  1.014 |              0
+   22 |   60.7 |     63.0 |  1.040 |              0
+   23 |   61.1 |     62.7 |  1.027 |              0
+   24 |   63.0 |     61.9 |  0.987 |              0
+   25 |   64.1 |     62.7 |  0.982 |              0
+   26 |   63.9 |     65.7 |  1.029 |              0
+   27 |   64.6 |     63.7 |  0.989 |              0
+   28 |   65.7 |     65.0 |  0.994 |              0
+   29 |   65.6 |     66.1 |  1.020 |              0
+   30 |   66.4 |     64.6 |  0.971 |              0
+   31 |   67.4 |     64.6 |  0.961 |              0
+   32 |   65.6 |     65.9 |  1.009 |              0
+   33 |   65.7 |     64.6 |  0.984 |              0
+   34 |   66.7 |     65.0 |  0.976 |              0
+   35 |   66.9 |     66.0 |  0.991 |              0
+   36 |   68.4 |     64.3 |  0.945 |              0
+   37 |   65.4 |     65.9 |  1.008 |              0
+   38 |   65.3 |     65.9 |  1.011 |              0
+   39 |   64.6 |     67.6 |  1.059 |              0
+   40 |   66.0 |     67.3 |  1.026 |              0
+   41 |   69.3 |     65.4 |  0.948 |              0
+   42 |   65.1 |     68.3 |  1.051 |              0
+   43 |   65.0 |     64.9 |  0.998 |              0
+   44 |   63.4 |     64.1 |  1.016 |              0
+   45 |   60.3 |     65.3 |  1.088 |              0
+   46 |   64.0 |     62.1 |  0.975 |              0
+   47 |   61.9 |     61.9 |  1.002 |              0
+   48 |   62.3 |     62.7 |  1.011 |              0
+   49 |   62.3 |     61.4 |  0.987 |              0
+   50 |   63.0 |     61.9 |  0.982 |              0
+   51 |   63.6 |     64.0 |  1.008 |              0
+   52 |   65.4 |     62.0 |  0.947 |              0
+   53 |   64.7 |     64.4 |  1.002 |              0
+   54 |   63.7 |     64.1 |  1.009 |              0
+   55 |   64.4 |     64.4 |  1.005 |              0
+   56 |   62.3 |     66.4 |  1.073 |              0
+   57 |   63.4 |     62.6 |  0.986 |              0
+   58 |   63.0 |     62.4 |  0.993 |              0
+   59 |   64.0 |     61.7 |  0.971 |              0
+   60 |   63.0 |     62.4 |  0.994 |              0
+   61 |   64.1 |     63.9 |  0.997 |              0
+   62 |   65.0 |     64.3 |  0.992 |              0
+   63 |   63.6 |     65.1 |  1.031 |              0
+
+--- Healing rounds (ratio > 1.5 in ALL 7 pairs) ---
+  None found with ratio > 1.5 in ALL pairs.
+
+--- Rounds where healed > new in ≥5/7 pairs ---
+  r=14: 6/7 pairs, mean_new=31.7, mean_healed=34.4
+  r=23: 6/7 pairs, mean_new=61.1, mean_healed=62.7
+  r=26: 5/7 pairs, mean_new=63.9, mean_healed=65.7
+  r=42: 5/7 pairs, mean_new=65.1, mean_healed=68.3
+  r=45: 6/7 pairs, mean_new=60.3, mean_healed=65.3
+  r=56: 5/7 pairs, mean_new=62.3, mean_healed=66.4
+  r=63: 5/7 pairs, mean_new=63.6, mean_healed=65.1
+
+--- Bit analysis for top healing rounds ---
+
+  Round 45 (healing excess = 5.0):
+    reg=b bit=15: heals in 6/7 pairs
+    reg=a bit= 5: heals in 4/7 pairs
+    reg=a bit=22: heals in 4/7 pairs
+    reg=a bit=28: heals in 4/7 pairs
+    reg=a bit=31: heals in 4/7 pairs
+    reg=c bit=25: heals in 4/7 pairs
+    reg=c bit=27: heals in 4/7 pairs
+    reg=d bit=19: heals in 4/7 pairs
+    reg=d bit=29: heals in 4/7 pairs
+    reg=e bit= 0: heals in 4/7 pairs
+
+  Round 56 (healing excess = 4.1):
+    reg=a bit=18: heals in 6/7 pairs
+    reg=c bit=19: heals in 5/7 pairs
+    reg=e bit=14: heals in 5/7 pairs
+    reg=f bit=23: heals in 5/7 pairs
+    reg=h bit=23: heals in 5/7 pairs
+    reg=b bit= 7: heals in 4/7 pairs
+    reg=c bit= 8: heals in 4/7 pairs
+    reg=d bit=16: heals in 4/7 pairs
+    reg=d bit=30: heals in 4/7 pairs
+    reg=e bit=10: heals in 4/7 pairs
+
+  Round 42 (healing excess = 3.1):
+    reg=h bit= 8: heals in 5/7 pairs
+    reg=a bit=19: heals in 4/7 pairs
+    reg=a bit=29: heals in 4/7 pairs
+    reg=b bit= 2: heals in 4/7 pairs
+    reg=b bit=14: heals in 4/7 pairs
+    reg=b bit=21: heals in 4/7 pairs
+    reg=d bit=20: heals in 4/7 pairs
+    reg=d bit=25: heals in 4/7 pairs
+    reg=d bit=26: heals in 4/7 pairs
+    reg=e bit= 2: heals in 4/7 pairs
+
+  Round 39 (healing excess = 3.0):
+    reg=b bit= 7: heals in 5/7 pairs
+    reg=d bit=10: heals in 5/7 pairs
+    reg=e bit= 8: heals in 5/7 pairs
+    reg=g bit=18: heals in 5/7 pairs
+    reg=a bit=20: heals in 4/7 pairs
+    reg=a bit=25: heals in 4/7 pairs
+    reg=a bit=26: heals in 4/7 pairs
+    reg=b bit= 2: heals in 4/7 pairs
+    reg=b bit=13: heals in 4/7 pairs
+    reg=c bit=16: heals in 4/7 pairs
+
+  Round 14 (healing excess = 2.7):
+    reg=a bit= 6: heals in 4/7 pairs
+    reg=a bit=24: heals in 4/7 pairs
+    reg=b bit= 7: heals in 4/7 pairs
+    reg=b bit=11: heals in 4/7 pairs
+    reg=b bit=15: heals in 4/7 pairs
+    reg=c bit=14: heals in 4/7 pairs
+    reg=d bit= 5: heals in 4/7 pairs
+    reg=a bit= 1: heals in 3/7 pairs
+    reg=a bit= 3: heals in 3/7 pairs
+    reg=a bit= 4: heals in 3/7 pairs
+
+--- Carry agreement: healing rounds vs non-healing ---
+  Mean carry_agreement on healing rounds: 0.6044
+  Mean carry_agreement on non-healing rounds: 0.5405
+  Difference: +0.0638
+
+--- K[r] at healing rounds ---
+  r=45: K[r]=0xd6990624 (HW=13), excess=5.0
+  r=56: K[r]=0x748f82ee (HW=17), excess=4.1
+  r=42: K[r]=0xc24b8b70 (HW=14), excess=3.1
+  r=39: K[r]=0x92722c85 (HW=13), excess=3.0
+  r=14: K[r]=0x9bdc06a7 (HW=17), excess=2.7
+  r=22: K[r]=0x5cb0a9dc (HW=16), excess=2.3
+  r= 9: K[r]=0x12835b01 (HW=11), excess=1.9
+  r=26: K[r]=0xb00327c8 (HW=12), excess=1.9
+  r=23: K[r]=0x76f988da (HW=18), excess=1.6
+  r=63: K[r]=0xc67178f2 (HW=17), excess=1.6
+
+--- Structural check: healing rounds in 100 random Wang pairs ---
+  Frequency of healed>new in 100 random Wang pairs:
+    r |  freq | structural?
+  -----------------------------------
+    7 |    46 | maybe
+    8 |    51 | maybe
+    9 |    51 | maybe <-- healing round
+   10 |    49 | maybe
+   11 |    48 | maybe
+   12 |    47 | maybe
+   13 |    47 | maybe
+   14 |    47 | maybe <-- healing round
+   20 |    46 | maybe
+   21 |    51 | maybe
+   22 |    42 | no <-- healing round
+   23 |    54 | maybe <-- healing round
+   24 |    47 | maybe
+   25 |    47 | maybe
+   26 |    48 | maybe <-- healing round
+   27 |    43 | no
+   28 |    45 | no
+   29 |    51 | maybe
+   30 |    43 | no
+   31 |    53 | maybe
+   32 |    41 | no
+   33 |    43 | no
+   34 |    46 | maybe
+   35 |    41 | no
+   36 |    51 | maybe
+   37 |    41 | no
+   38 |    59 | maybe
+   39 |    55 | maybe <-- healing round
+   42 |    41 | no <-- healing round
+   43 |    50 | maybe
+   44 |    59 | maybe
+   45 |    53 | maybe <-- healing round
+   48 |    48 | maybe
+   49 |    45 | no
+   50 |    41 | no
+   51 |    51 | maybe
+   53 |    48 | maybe
+   54 |    41 | no
+   55 |    41 | no
+   56 |    46 | maybe <-- healing round
+   58 |    52 | maybe
+   60 |    49 | maybe
+   63 |    55 | maybe <-- healing round
+
+================================================================================
+  ALL EXPERIMENTS COMPLETE
+================================================================================
