@@ -1,0 +1,1 @@
+Task12 pair generator: 200 sets, 4 threads
