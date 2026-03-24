@@ -1,0 +1,156 @@
+======================================================================
+ЗАДАНИЕ 13: "Three Frontiers — CCS patterns, H[7]-cascade, MI Flow"
+======================================================================
+Priority: Part 2 > Part 1 > Part 3
+
+══════════════════════════════════════════════════════════════════════
+ЧАСТЬ 2: H[7]-CASCADE (HIGHEST PRIORITY)
+══════════════════════════════════════════════════════════════════════
+
+Setup: 2,000,000 random W[0] (W[1..15]=0), find H[7] birthday collisions.
+Bug fix: excluded trivial W[0] duplicates (same input → same hash).
+
+Results:
+  Total genuine H[7] collisions: 463  (expected: 465.7 ✓)
+  Time: 577s at ~3464 samples/s
+
+  HW(ΔH[i]) for H[7]-collision pairs (N=463):
+  ┌───┬─────────────────┬──────────┬──────────────┐
+  │ i │  mean HW(ΔH[i]) │      std │  compression │
+  ├───┼─────────────────┼──────────┼──────────────┤
+  │ 0 │         16.0864 │   2.9247 │      -0.0864 │
+  │ 1 │         15.8747 │   2.9292 │       0.1253 │
+  │ 2 │         16.0648 │   2.8124 │      -0.0648 │
+  │ 3 │         15.9870 │   2.7344 │       0.0130 │
+  │ 4 │         16.1274 │   3.0138 │      -0.1274 │
+  │ 5 │         15.9201 │   2.9787 │       0.0799 │
+  │ 6 │         15.9654 │   2.9515 │       0.0346 │
+  │ 7 │          0.0000 │   0.0000 │      16.0000 │ ← exact collision
+  └───┴─────────────────┴──────────┴──────────────┘
+
+  NULL CONTROL (500 random non-collisional pairs):
+  All mean HW(ΔH[i]) ≈ 16.0 (within ±0.31)
+
+VERDICT PART 2:
+  ✗ H[7]-collision does NOT compress ANY other hash word
+  ✗ All HW(ΔH[i]) for i=0..6 are ~16.0 (indistinguishable from random)
+  ✗ П-1254 claim "HW(ΔH[4])=12 при H[7]-коллизии" is REFUTED at N=463
+  ✗ No cascade effect: H[7] collision is purely local
+
+  Best near-collision found: H[7] exact + H[4] with HW=7
+  (expected minimum from 463 trials with binomial(32,0.5): ~7, consistent with chance)
+
+══════════════════════════════════════════════════════════════════════
+ЧАСТЬ 1: CCS PATTERN CLUSTERS
+══════════════════════════════════════════════════════════════════════
+
+Setup: 5000 Wang pairs (random Wn, δW[0]=0x8000, δe[2..17]=0)
+Carry fingerprint: 7 sub-additions × 4 rounds (17-20) = 28 × 32 = 896 bits
+Compared 2000 pairs (1,999,000 comparisons)
+
+  Overall mean HW(δhash) = 128.03 (expected 128) ✓
+
+  Top-20 closest carry fingerprint pairs:
+  ┌──────┬──────────────┬──────────┬──────────────┬──────────────┐
+  │ Rank │     Pair     │ FP dist  │ HW(δhash_A)  │ HW(δhash_B)  │
+  ├──────┼──────────────┼──────────┼──────────────┼──────────────┤
+  │    1 │ (  96, 760)  │      347 │          119 │          118 │
+  │    2 │ ( 258,1731)  │      347 │          133 │          114 │
+  │    3 │ ( 944,1386)  │      348 │          119 │          127 │
+  │  ... │    ...       │  348-355 │      108-148 │      108-148 │
+  │   20 │ (1029,1825)  │      355 │          118 │          118 │
+  └──────┴──────────────┴──────────┴──────────────┴──────────────┘
+
+  Mean HW(δhash) for close-fingerprint pairs: 127.72
+  Overall mean HW(δhash):                     128.03
+  Difference:                                  -0.31 (noise)
+
+  NULL CONTROL:
+  Mean fingerprint distance (random):     420.4
+  Mean fingerprint distance (top-20):     351.9
+  Mean HW(δhash) (random):              127.65
+  Mean HW(δhash) (close):               127.72
+
+  Pearson correlation (FP distance vs |HW diff|): -0.0313
+  → No significant correlation (|r| < 0.1)
+
+VERDICT PART 1:
+  ✗ Similar carry fingerprints do NOT predict similar hash differences
+  ✗ Correlation r = -0.03 (indistinguishable from zero)
+  ✗ Min fingerprint distance = 347/896 bits ≈ 38.7% (far from 0)
+  ✗ Carry patterns on rounds 17-20 do NOT form exploitable equivalence classes
+  ✗ Birthday within carry class offers NO advantage
+
+══════════════════════════════════════════════════════════════════════
+ЧАСТЬ 3: MUTUAL INFORMATION
+══════════════════════════════════════════════════════════════════════
+
+Setup: 10,000 random messages, measure MI(input_bit, output_bit) for all 512 input bits.
+Three output bits tested: H[0][0], H[0][31], H[7][0]
+
+  Results for H[0][0] (LSB of first hash word):
+  Max MI = 0.000662  (top: W[0][1])
+  Input bits with MI > 0.001: 0
+  Input bits with MI > 0.0005: 7
+
+  Results for H[0][31] (MSB of first hash word):
+  Max MI = 0.000610  (top: W[13][23])
+  Input bits with MI > 0.001: 0
+  Input bits with MI > 0.0005: 1
+
+  Results for H[7][0] (LSB of last hash word):
+  Max MI = 0.000833  (top: W[6][23])
+  Input bits with MI > 0.001: 0
+  Input bits with MI > 0.0005: 4
+
+  Cross-comparison (top-10 overlap):
+  H[0][0]  vs H[0][31]: 0/10
+  H[0][0]  vs H[7][0]:  0/10
+  H[0][31] vs H[7][0]:  0/10
+  → Zero overlap: each output bit has different "noisiest" inputs
+
+  BONUS — MI(state[r][0][0], H[0][0]) by round:
+  Round  0: MI = 0.000000  (IV = constant)
+  Round  8: MI = 0.000161
+  Round 16: MI = 0.000001
+  Round 24: MI = 0.000329
+  Round 32: MI = 0.000259
+  Round 40: MI = 0.000177
+  Round 48: MI = 0.000027
+  Round 56: MI = 0.000004
+  Round 64: MI = 0.999896  (output = self)
+
+VERDICT PART 3:
+  ✗ Max MI = 0.000833 < 0.001 → No information channel
+  ✗ SHA-256 fully destroys mutual information over 64 rounds
+  ✗ No "preferred" input bits influence any specific output bit
+  ✗ Top-MI bits differ completely across output bits (zero overlap)
+  ✗ Midstate MI is negligible for all rounds 0-56
+  ✗ MITM filtering via MI is not viable
+
+══════════════════════════════════════════════════════════════════════
+OVERALL SUMMARY: THREE NULL RESULTS
+══════════════════════════════════════════════════════════════════════
+
+All three frontiers returned null results:
+
+1. CCS Pattern Clusters: carry fingerprints on rounds 17-20 do not
+   form exploitable equivalence classes. r = -0.03.
+
+2. H[7]-Cascade: H[7] collision does NOT compress other hash words.
+   All HW(ΔH[i]) ≈ 16 for i≠7. П-1254 claim REFUTED.
+
+3. Mutual Information: max MI < 0.001 between any input-output bit pair.
+   SHA-256 achieves near-perfect MI destruction.
+
+Methodological notes:
+- Rule 12 (null control): applied in all three parts
+- Rule 14 (triple check): triggered in initial Part 2 run due to W[0]
+  duplicate bug; after fix, no compression > 2 bits detected
+- N=463 genuine H[7] collisions (vs target 5000) — sufficient for
+  detecting compression > 1 bit at 95% confidence
+
+IMPORTANT BUG CAUGHT: Initial Part 2 run showed HW≈8 compression
+because W[0] duplicates (same input → same hash) were counted as
+"H[7] collisions". After filtering, all compression vanished.
+This demonstrates why null controls are critical.
