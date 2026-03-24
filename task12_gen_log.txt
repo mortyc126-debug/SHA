@@ -1,1 +1,8 @@
-Task12 pair generator: 200 sets, 4 threads
+Task12 random sampler: target=100, threads=4, limit=600s
+Expected rate: ~1 pair per 2^32/rate seconds
+  Found 1 pairs (1741M evals, 357s)     Found 2 pairs (2020M evals, 414s)   
+Done: 2 pairs in 599.9s (1.17e+10 evals, 19.5M/s, 5856296960 evals/pair)
+Task12 random sampler: target=100, threads=4, limit=3600s
+Expected rate: ~1 pair per 2^32/rate seconds
+  Found 1 pairs (1505M evals, 307s)     Found 2 pairs (3893M evals, 794s)     Found 3 pairs (4064M evals, 829s)     Found 4 pairs (4665M evals, 957s)     Found 5 pairs (5258M evals, 1074s)     Found 6 pairs (5412M evals, 1110s)     Found 7 pairs (6969M evals, 1430s)     Found 8 pairs (7328M evals, 1498s)     Found 9 pairs (7841M evals, 1608s)     Found 10 pairs (8442M evals, 1726s)     Found 11 pairs (10246M evals, 2101s)     Found 12 pairs (10763M evals, 2206s)     Found 13 pairs (11297M evals, 2317s)     Found 14 pairs (12081M evals, 2473s)     Found 15 pairs (13556M evals, 2775s)     Found 16 pairs (14947M evals, 3069s)     Found 17 pairs (15101M evals, 3101s)     Found 18 pairs (16320M evals, 3346s)   
+Done: 18 pairs in 3599.8s (7.02e+10 evals, 19.5M/s, 3902625109 evals/pair)

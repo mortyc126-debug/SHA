@@ -459,50 +459,92 @@ def experiment_B(data_list):
 
 
 # ═══════════════════════════════════════════════════════════════
+# PAIR LOADING from C generator output
+# ═══════════════════════════════════════════════════════════════
+def parse_c_pairs(filename):
+    """Parse PAIR/Wn/Wf output from C generators."""
+    pairs = []
+    with open(filename) as f:
+        lines = [l.strip() for l in f if l.strip() and not l.startswith('#')]
+    i = 0
+    seen = set()
+    while i < len(lines):
+        if lines[i] == 'PAIR':
+            if i+2 < len(lines):
+                wn_hex = lines[i+1].replace('Wn =', '').strip().split()
+                wf_hex = lines[i+2].replace('Wf =', '').strip().split()
+                if len(wn_hex) == 16 and len(wf_hex) == 16:
+                    Wn = [int(x, 16) for x in wn_hex]
+                    Wf = [int(x, 16) for x in wf_hex]
+                    key = tuple(Wn)
+                    if key not in seen:
+                        seen.add(key)
+                        pairs.append((Wn, Wf))
+                i += 3
+            else:
+                i += 1
+        else:
+            i += 1
+    return pairs
+
+
+# ═══════════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════════
 def main():
-    N_PAIRS = 10000
-    if len(sys.argv) > 1:
-        N_PAIRS = int(sys.argv[1])
+    import os, glob as glob_mod
 
     print("=" * 80)
     print(f"ЗАДАНИЕ 12: Precision Carry Control — δ(d+T1) alignment on round 18")
-    print(f"Target: {N_PAIRS} Wang pairs with δe[2..17]=0")
     print("=" * 80)
 
-    # Step 1: Generate pairs
-    print(f"\n[Step 1] Generating {N_PAIRS} Wang pairs via birthday search...")
-    t0 = time.time()
-    pairs = find_wang_pairs(N_PAIRS, batch_size=500000, verbose=True)
-    t_search = time.time() - t0
-    print(f"Search time: {t_search:.1f}s")
+    # Step 1: Load pairs from C output OR generate
+    pairs = []
+
+    # Try loading from file
+    pair_file = 'task12_pairs.txt'
+    if os.path.exists(pair_file) and os.path.getsize(pair_file) > 0:
+        print(f"\n[Step 1] Loading pairs from {pair_file}...")
+        pairs = parse_c_pairs(pair_file)
+        print(f"  Loaded {len(pairs)} unique pairs")
+
+    if not pairs:
+        N_PAIRS = 10 if len(sys.argv) <= 1 else int(sys.argv[1])
+        print(f"\n[Step 1] No pre-generated pairs. Generating {N_PAIRS} via birthday search...")
+        t0 = time.time()
+        pairs = find_wang_pairs(N_PAIRS, batch_size=500000, verbose=True)
+        print(f"  Search time: {time.time()-t0:.1f}s")
+
+    print(f"  Total pairs for analysis: {len(pairs)}")
 
     # Step 2: Analyze all pairs
     print(f"\n[Step 2] Analyzing {len(pairs)} pairs...")
     t0 = time.time()
     data_list = []
     for i, (Wn, Wf) in enumerate(pairs):
-        Wn_s = schedule(Wn)
-        Wf_s = schedule(Wf)
-        d = analyze_pair(Wn_s, Wf_s)
+        d = analyze_pair(Wn, Wf)
         data_list.append(d)
         if (i+1) % 1000 == 0:
             print(f"  Analyzed {i+1}/{len(pairs)}...")
     t_analyze = time.time() - t0
-    print(f"Analysis time: {t_analyze:.1f}s")
+    print(f"  Analysis time: {t_analyze:.1f}s")
 
     # Verify: all δe[17] should be 0
     de17_nonzero = sum(1 for d in data_list if d['de'][17] != 0)
-    print(f"Verification: δe[17]≠0 count = {de17_nonzero} (should be 0)")
+    print(f"  Verification: δe[17]≠0 count = {de17_nonzero} (should be 0)")
+
+    # Important theoretical note
+    print(f"\n  NOTE: δe[18] = S18 = δa[14] + δW[17] exactly (when δe[17]=0)")
+    print(f"        So HW(δe[18]) = HW(S18) by definition.")
+    print(f"        The INTERESTING question is propagation to rounds 19+.")
 
     # v2(S18) distribution summary
     v2_dist = defaultdict(int)
     for d in data_list:
         v2_dist[d['v2_S18']] += 1
-    print(f"\nv2(S18) distribution:")
+    print(f"\n  v2(S18) distribution:")
     for v in sorted(v2_dist.keys()):
-        print(f"  v2={v}: {v2_dist[v]} ({100*v2_dist[v]/len(data_list):.2f}%)")
+        print(f"    v2={v}: {v2_dist[v]} ({100*v2_dist[v]/len(data_list):.2f}%)")
 
     # Step 3: Run experiments (priority A > C > D > B)
     print()
@@ -511,7 +553,37 @@ def main():
     experiment_D(data_list)
     experiment_B(data_list)
 
+    # Summary / Conclusions
     print("\n" + "=" * 80)
+    print("THEORETICAL ANALYSIS (supplements empirical data)")
+    print("=" * 80)
+    print("""
+When δe[2..17]=0 (Wang chain + birthday on round 17):
+
+1. δe[18] = S18 = δa[14] + δW[17] EXACTLY (mod 2^32)
+   - This is because δh[17]=δe[14]=0, δSig1(e[17])=0, δCh(e[17],f[17],g[17])=0
+   - So δT1[17] = δW[17] only, and δe[18] = δd[17] + δT1[17] = δa[14] + δW[17]
+
+2. v2(S18) = k means low k bits of δe[18] are 0
+   - Expected HW(δe[18]) when v2(S18)=k: ≈ (32-k)/2 = 16 - k/2
+   - This is a TRIVIAL consequence, not a SHA-256 property
+
+3. The KEY question: does v2(S18) affect rounds 19+?
+   - δe[19] depends on δSig1(e[18]) and δCh(e[18],f[18],g[18])
+   - These are NONLINEAR in δe[18], so empirical measurement is essential
+   - If v2(S18)=k, the low k bits of e_f[18] and e_n[18] AGREE on carries
+   - This means Sig1(e_f[18]) and Sig1(e_n[18]) partially agree (via ROTR6,11,25)
+   - The partial agreement propagates to δe[19] through the carry chain
+
+4. Cascade feasibility:
+   - If corr(v2(S18), HW(δe[r])) > 0 for r >> 18: carry alignment propagates
+   - Cost of v2(S18)≥k: birthday 2^{32+k} (if S18 uniform mod 2^k)
+   - Each level "freezes" k carry bits → need ceil(32/k) levels for full collision
+   - Naive estimate: 6 levels × 2^8 = 2^48 (for k=8)
+   - BUT this requires carry alignment to PROPAGATE, which SHA-256 resists
+""")
+
+    print("=" * 80)
     print("DONE")
     print("=" * 80)
 

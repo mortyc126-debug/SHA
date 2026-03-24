@@ -4,3 +4,7 @@ task8_search
 task8_search2
 task11_expA
 task12_genpairs
+task12_batch_gen
+task12_fast_gen
+task12_newton_gen
+task12_sample_gen

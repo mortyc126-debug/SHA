@@ -1,0 +1,168 @@
+================================================================================
+ЗАДАНИЕ 12: Precision Carry Control — δ(d+T1) alignment on round 18
+================================================================================
+
+[Step 1] Loading pairs from task12_pairs.txt...
+  Loaded 23 unique pairs
+  Total pairs for analysis: 23
+
+[Step 2] Analyzing 23 pairs...
+  Analysis time: 0.0s
+  Verification: δe[17]≠0 count = 0 (should be 0)
+
+  NOTE: δe[18] = S18 = δa[14] + δW[17] exactly (when δe[17]=0)
+        So HW(δe[18]) = HW(S18) by definition.
+        The INTERESTING question is propagation to rounds 19+.
+
+  v2(S18) distribution:
+    v2=0: 10 (43.48%)
+    v2=1: 7 (30.43%)
+    v2=2: 3 (13.04%)
+    v2=3: 2 (8.70%)
+    v2=7: 1 (4.35%)
+
+================================================================================
+EXPERIMENT A: v2(S18) vs HW(δe[18]) — Carry Alignment Effect
+================================================================================
+Total pairs: 23
+
+ v2(S18) |  count |  mean HW(δe18) |    std |  mean HW(δe19) |  mean HW(δhash) |  mean low_k_hw
+----------------------------------------------------------------------------------------------------
+       0 |     10 |          15.70 |   2.95 |          17.50 |          129.60 |           0.00
+       1 |      7 |          16.00 |   2.52 |          15.00 |          124.29 |           0.00
+       2 |      3 |          15.67 |   1.15 |          18.00 |          126.33 |           0.00
+       3 |      2 |          15.00 |   0.00 |          17.50 |          130.00 |           0.00
+       7 |      1 |          17.00 |   0.00 |          17.00 |          134.00 |           0.00
+
+--- Theoretical check: HW of lower k bits of δe[18] ---
+If v2(S18) = k, then δe[18] bits 0..k-1 should be carry-free.
+low_k_hw = HW(δe[18] & ((1<<k)-1)) should be ≈ 0 if carry alignment works.
+
+  v2= 0: mean low_k_hw = 0.000, zero_fraction = 10/10 = 1.000
+  v2= 1: mean low_k_hw = 0.000, zero_fraction = 7/7 = 1.000
+  v2= 2: mean low_k_hw = 0.000, zero_fraction = 3/3 = 1.000
+
+  Null (v2=0): mean HW(δe18) = 15.70, mean HW(δhash) = 129.60
+  v2≥4 (1 pairs): mean HW(δe18) = 17.00, mean HW(δhash) = 134.00
+  Δ HW(δe18) = 1.30, Δ HW(δhash) = 4.40
+
+================================================================================
+EXPERIMENT C: Carry Propagation Depth — v2(S18) correlation with δe[r]
+================================================================================
+Total pairs: 23
+
+Pearson correlation: corr(v2(S18), HW(δe[r]))
+  Negative correlation = higher v2 → lower HW (good!)
+  Rule 14: |corr| > 0.1 at r≥25 → triple check
+
+ round |     corr |  mean HW |  std HW | significance
+-------------------------------------------------------
+  r=18 |  +0.0560 |    15.78 |    2.30 |             
+  r=19 |  +0.0066 |    16.78 |    2.73 |             
+  r=20 |  +0.0391 |    15.30 |    2.90 |             
+  r=21 |  +0.2005 |    15.87 |    2.54 |             
+  r=22 |  -0.4729 |    15.39 |    2.35 |            *
+  r=23 |  -0.0305 |    16.09 |    2.96 |             
+  r=24 |  -0.0125 |    17.43 |    2.90 |             
+  r=25 |  +0.3662 |    15.39 |    2.18 |             
+  r=26 |  +0.1243 |    15.04 |    3.32 |             
+  r=27 |  +0.2109 |    15.96 |    2.65 |             
+  r=28 |  -0.1737 |    16.52 |    2.96 |             
+  r=29 |  +0.1179 |    15.70 |    2.33 |             
+  r=30 |  -0.2683 |    15.35 |    2.28 |             
+
+  *** Rule 14 triggered: significant correlation at late rounds ***
+    r=25: corr=+0.3662 — needs triple verification
+    r=26: corr=+0.1243 — needs triple verification
+    r=27: corr=+0.2109 — needs triple verification
+    r=28: corr=-0.1737 — needs triple verification
+    r=29: corr=+0.1179 — needs triple verification
+    r=30: corr=-0.2683 — needs triple verification
+
+  corr(v2(S18), HW(δhash)) = +0.0876
+
+--- Grouped: mean HW(δe[r]) by v2(S18) bucket ---
+    bucket |    r=18 |    r=19 |    r=20 |    r=21 |    r=22 |    r=23 |    r=24 |    r=25 |    hash
+------------------------------------------------------------------------------------------------------
+      v2=0 |   15.70 |   17.50 |   14.60 |   15.00 |   16.60 |   15.90 |   18.20 |   14.30 |  129.60  (n=10)
+      v2=1 |   16.00 |   15.00 |   15.43 |   16.14 |   14.57 |   16.43 |   15.43 |   16.00 |  124.29  (n=7)
+    v2=2-3 |   15.40 |   17.80 |   16.80 |   17.20 |   14.80 |   16.40 |   18.80 |   16.20 |  127.80  (n=5)
+    v2=4-7 |   17.00 |   17.00 |   14.00 |   16.00 |   12.00 |   14.00 |   17.00 |   18.00 |  134.00  (n=1)
+
+================================================================================
+EXPERIMENT D: Optimal k — Cost vs Propagation Benefit
+================================================================================
+Total pairs: 23
+
+--- Distribution check: P(v2(S18) >= k) vs 2^{-k} ---
+  k= 1: observed P=0.565217 (13/23), expected 2^{-1}=0.500000, ratio=1.130
+  k= 2: observed P=0.260870 (6/23), expected 2^{-2}=0.250000, ratio=1.043
+  k= 4: observed P=0.043478 (1/23), expected 2^{-4}=0.062500, ratio=0.696
+  k= 8: observed P=0.000000 (0/23), expected 2^{-8}=0.003906, ratio=0.000
+  k=12: observed P=0.000000 (0/23), expected 2^{-12}=0.000244, ratio=0.000
+  k=16: observed P=0.000000 (0/23), expected 2^{-16}=0.000015, ratio=0.000
+
+--- Cost-benefit table ---
+  Cost = birthday pairs needed ≈ 2^(32+k) if P(v2≥k) = 2^-16
+  Benefit = reduction in HW(δe[18]), HW(δe[22]), HW(δhash)
+
+   k |         cost |  count |   HW(δe18) |   HW(δe22) |  HW(δhash) |    Δe18 |    Δe22 |   Δhash
+----------------------------------------------------------------------------------------------------
+null |     baseline |     10 |      15.70 |      16.60 |     129.60 |       — |       — |       —
+   1 |         2^33 |     13 |      15.85 |      14.46 |     126.38 |   +0.15 |   -2.14 |   -3.22
+   2 |         2^34 |      6 |      15.67 |      14.33 |     128.83 |   -0.03 |   -2.27 |   -0.77
+   4 |         2^36 |      1 |      17.00 |      12.00 |     134.00 |   +1.30 |   -4.60 |   +4.40
+   8 |         2^40 |      0 |        n/a |        n/a |        n/a |     n/a |     n/a |     n/a
+  12 |         2^44 |      0 |        n/a |        n/a |        n/a |     n/a |     n/a |     n/a
+  16 |         2^48 |      0 |        n/a |        n/a |        n/a |     n/a |     n/a |     n/a
+
+================================================================================
+EXPERIMENT B: Two-Level Birthday — δe[17]=0 AND v2(S18) ≥ k
+================================================================================
+Total pairs with δe[17]=0: 23
+
+--- v2(S18) ≥ 4: found 1, expected ≈ 1.4 ---
+  HW(δe[18]): filtered mean = 17.00, baseline mean = 15.78
+  HW(δe[19]): filtered mean = 17.00, baseline mean = 16.78
+  HW(δhash):  filtered mean = 134.00, baseline mean = 127.78
+
+--- v2(S18) ≥ 8: found 0, expected ≈ 0.1 ---
+  No pairs found.
+
+--- v2(S18) ≥ 12: found 0, expected ≈ 0.0 ---
+  No pairs found.
+
+--- v2(S18) ≥ 16: found 0, expected ≈ 0.0 ---
+  No pairs found.
+
+================================================================================
+THEORETICAL ANALYSIS (supplements empirical data)
+================================================================================
+
+When δe[2..17]=0 (Wang chain + birthday on round 17):
+
+1. δe[18] = S18 = δa[14] + δW[17] EXACTLY (mod 2^32)
+   - This is because δh[17]=δe[14]=0, δSig1(e[17])=0, δCh(e[17],f[17],g[17])=0
+   - So δT1[17] = δW[17] only, and δe[18] = δd[17] + δT1[17] = δa[14] + δW[17]
+
+2. v2(S18) = k means low k bits of δe[18] are 0
+   - Expected HW(δe[18]) when v2(S18)=k: ≈ (32-k)/2 = 16 - k/2
+   - This is a TRIVIAL consequence, not a SHA-256 property
+
+3. The KEY question: does v2(S18) affect rounds 19+?
+   - δe[19] depends on δSig1(e[18]) and δCh(e[18],f[18],g[18])
+   - These are NONLINEAR in δe[18], so empirical measurement is essential
+   - If v2(S18)=k, the low k bits of e_f[18] and e_n[18] AGREE on carries
+   - This means Sig1(e_f[18]) and Sig1(e_n[18]) partially agree (via ROTR6,11,25)
+   - The partial agreement propagates to δe[19] through the carry chain
+
+4. Cascade feasibility:
+   - If corr(v2(S18), HW(δe[r])) > 0 for r >> 18: carry alignment propagates
+   - Cost of v2(S18)≥k: birthday 2^{32+k} (if S18 uniform mod 2^k)
+   - Each level "freezes" k carry bits → need ceil(32/k) levels for full collision
+   - Naive estimate: 6 levels × 2^8 = 2^48 (for k=8)
+   - BUT this requires carry alignment to PROPAGATE, which SHA-256 resists
+
+================================================================================
+DONE
+================================================================================
