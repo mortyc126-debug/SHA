@@ -214,3 +214,55 @@ C^(выходов/2) = (2^32)^(8/2) = 2^128.
 ---
 
 *Исследование продолжается. Измерение бесконечно.*
+
+---
+
+## IX. ОБОБЩЁННАЯ ФОРМУЛА (Теорема T9)
+
+### Для любого Merkle-Damgård + ARX хеша:
+
+```
+collision_cost = C^(N_reg / 2)
+curvature      = N_reg × C_bits / 2
+boundary       = 2 × N_reg rounds
+rank(CE)       = C_bits × (r - N_reg/2)  for r ∈ [N_reg/2, 2×N_reg]
+```
+
+Где:
+- C = ёмкость одной позиции (2^32 или 2^64)
+- C_bits = log₂(C) (32 или 64)
+- N_reg = число выходных регистров
+
+### Верификация:
+
+| Hash | C | N_reg | Cost | K | Boundary | Verified |
+|------|---|-------|------|---|----------|----------|
+| SHA-256 | 2^32 | 8 | 2^128 | 128 | r=16 | ✓ |
+| SHA-512 | 2^64 | 8 | 2^256 | 256 | r=16 | ✓ |
+| 4-reg | 2^32 | 4 | 2^64 | 64 | r=8 | ✓ |
+
+### Следствия:
+1. **Всё определяется двумя числами**: C и N_reg
+2. Rounds > boundary = **defense-in-depth** (redundant for algebra)
+3. Schedule, Ch, Maj, rotations = **secondary defenses**
+4. Carry OR Ch/Maj = **sufficient** for rank(CE) = full
+5. SHA-256 = compositionally stable (F² ≡ F)
+
+---
+
+## X. TAXONOMY НЕЛИНЕЙНОСТИ
+
+| Component | rank(CE) | Curvature K | Necessary? |
+|-----------|----------|-------------|------------|
+| Carry (ADD) | 256 | 88 | Sufficient alone |
+| Ch/Maj | 256 | 60 | Sufficient alone |
+| Rotations | 255 | 10 | +1 rank (critical!) |
+| Carry + Ch/Maj | 256 | 128 | Full (standard) |
+| None | 0 | 0 | BROKEN |
+
+SHA-256 security = **any nonlinearity** (carry or Ch/Maj).
+Rotations = exactly +1 rank = the last critical bit.
+
+---
+
+*Единая Теория v2.0. Исследование продолжается.*
