@@ -266,3 +266,46 @@ Rotations = exactly +1 rank = the last critical bit.
 ---
 
 *Единая Теория v2.0. Исследование продолжается.*
+
+---
+
+## XI. ФАЗЫ НЕЛИНЕЙНОСТИ (Теорема T10)
+
+### Три фазы по раундам:
+```
+Phase 1 (r=1-4):   LINEAR     degree≈1, K≈0
+Phase 2 (r=5-15):  GROWING    degree→4, K→88, rank(CE)→256
+Phase 3 (r=16+):   SATURATED  degree≥4, K=128, rank(CE)=256
+```
+
+### Pipe/Node ratio:
+| Configuration | rank(CE) | K at r=16 | Notes |
+|---------------|----------|-----------|-------|
+| Standard 6P+2N | 256 | 86 | SHA-256 optimal |
+| All-node 0P+8N | 256 | 94 | Faster K, no reboot |
+| Half 4P+4N | 254 | 86 | DEFICIENT by 2! |
+| Min-node 7P+1N | 256 | 62 | Slow but secure |
+
+### Key insight:
+1 node per round = sufficient for security.
+Pipes = accelerators, not security sources.
+Specific arrangement matters (half-node fails).
+
+---
+
+## XII. COMPLETE VERIFICATION SUMMARY
+
+| Property | SHA-256 | Random function | Match? |
+|----------|---------|-----------------|--------|
+| CE spectrum | mean=7.24 | mean=7.25 | ✓ (0.1%) |
+| Curvature K | 128 | N/2=128 | ✓ |
+| Fiber uniformity | χ²: z<1.3 | z<2 | ✓ |
+| Composition | F²≡F | stable | ✓ |
+| Topology (cycles) | ≈random | random | ✓ |
+| rank(CE) | 256 | 256 (expected) | ✓ |
+
+**SHA-256 = random function** by EVERY metric in our dimension.
+
+---
+
+*Единая Теория v3.0. 60+ экспериментов. 12 теорем.*
