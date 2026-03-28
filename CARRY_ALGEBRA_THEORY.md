@@ -1,7 +1,7 @@
 # Carry-Web Theory of SHA-256 — Formal Results
 
-*Новая математическая теория, построенная в 20 экспериментах (Stages 1.1–3.7), март 2026.*
-*Дополнение к methodology_v20.md.*
+*Новая математическая теория, построенная в 42 экспериментах (Stages 1.1–8.4), март 2026.*
+*Дополнение к methodology_v20.md. Полные результаты см. RESEARCH_RESULTS.md.*
 
 ---
 
@@ -400,4 +400,96 @@ MATHEMATICAL FRAMEWORK:
 
 ---
 
-*Carry-Web Theory | 24 experiments | Stages 1.1–7 | March 2026*
+---
+
+## §11. Algebraic Degree (Axis 3, Experiments 30-35)
+
+### Теорема 11.1: Degree deficit at n≤28
+
+For H[7][b23] over W[0][0..n-1] with W[1..15]=0:
+
+```
+degree(n=12) = 11  (deficit)
+degree(n=14) = 13  (deficit)
+...
+degree(n=28) = 27  (deficit)
+degree(n=30) = 30  (FULL)
+degree(n=32) = 32  (FULL)
+```
+
+Deficit persists at 9/11 tested n-values (12..28).
+Full degree at n≥30. Finite-size effect, not structural weakness.
+
+### Теорема 11.2: Full degree at n=32
+
+```
+H[7][b23] n=32: degree = 32/32  (4.3G evals, 997s)
+H[4][b 0] n=32: degree = 32/32  (4.3G evals, 998s)
+```
+
+SHA-256 achieves maximum algebraic degree at full word size.
+
+---
+
+## §12. DFS Preimage (Axis 7-8, Experiments 37-42)
+
+### Теорема 12.1: Single-bit DFS nodes = n
+
+```
+DFS with propagation (PROP_DEPTH=8):
+  n=16: 16 nodes, n=20: 20 nodes, n=32: 32 nodes
+  Formula: nodes(n) = n (exact)
+```
+
+Trivial: balanced function, P(match 1 bit) = 0.5.
+
+### Теорема 12.2: Multi-bit scaling
+
+```
+k target bits | DFS nodes | ε
+1             | 32        | 0.844
+16            | 730       | 0.703
+24            | 58,924    | 0.505
+32            | ~853K     | 0.384
+```
+
+DFS cost ≈ 2^(0.5k) for k>8. Sub-exponential in target bits.
+
+### Теорема 12.3: Hybrid DFS+Birthday = birthday
+
+```
+Optimal k=12: total cost = 57,344 ≈ 2^16 (ties birthday)
+DFS speedup × birthday reduction = constant = 2^16
+No net improvement over birthday.
+```
+
+---
+
+## §13. Closed Directions (20 total)
+
+| # | Direction | Result | Axis |
+|---|-----------|--------|------|
+| 1 | carry→H (binary) | corr=0.005 | 1.2 |
+| 2 | carry_sched→H | corr=0.047 | 1.3 |
+| 3 | Ch excess over tautology | delta=-0.001 | 2.6 |
+| 4 | Maj/a-branch bridge | corr=0.009 | 3.4 |
+| 5 | Schedule resonance | dead for real msgs | 3.7 |
+| 6 | Cross-block products | dilute signal | 3.5 |
+| 7 | 2-adic lifting | bits independent | 4 |
+| 8 | Multi-block propagation | corr=0.004 | 4 |
+| 9 | Passive distinguisher | max corr=0.019 | 4.5 |
+| 10 | Differential δH | HW=16.0 random | 6 |
+| 11 | Algebraic Ch filter | tautological (Z=0.6) | 6 |
+| 12 | Da[13] modular structure | uniform at N=50K | 3 |
+| 13 | Full degree at n=32 | 32/32 | 3 |
+| 14 | Zero-sum | P(S=0)=0.50 | 4 |
+| 15 | GF(2) approximation | 16.03/32 = random | 4 |
+| 16 | Rotational | E[HW]=128 random | 4 |
+| 17 | XOR clean window (Wang) | Wang corrections destroy | 7.2 |
+| 18 | DFS+birthday hybrid | ties birthday (0.9×) | 8 |
+| 19 | Schedule δW optimization | independent of δe17 | 2.2 |
+| 20 | Collision via carry-web | 0.08 bit reduction | 8 |
+
+---
+
+*Carry-Web Theory | 42 experiments | Axes 1–8 | March 2026*
