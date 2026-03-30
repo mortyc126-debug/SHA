@@ -1298,43 +1298,45 @@ DimHash-256: 29 rounds, 3× faster, 67% gate savings.
 
 ## 13. ЗАКРЫТЫЕ НАПРАВЛЕНИЯ (~35)
 
-| # | Направление | Результат |
-|---|------------|-----------|
-| 1 | carry→H (binary) | corr=0.005 |
-| 2 | carry_sched→H | corr=0.047 (borderline) |
-| 3 | Ch excess over tautology | delta=-0.001 (zero) |
-| 4 | Maj/a-branch bridge | corr=0.009 (noise) |
-| 5 | Schedule resonance | dead for real msgs |
-| 6 | Cross-block products | dilute signal (0.3-0.7×) |
-| 7 | 2-adic lifting | bits independent |
-| 8 | Multi-block propagation | corr=0.004 |
-| 9 | Passive distinguisher | max corr=0.019 |
-| 10 | Differential δH | HW=16.0 random |
-| 11 | Algebraic Ch filter | tautological (Z=0.6) |
-| 12 | Da[13] modular structure | uniform at N=50K |
-| 13 | Full degree at n=32 | 32/32 (full) |
-| 14 | Zero-sum | P(S=0)=0.50 |
-| 15 | GF(2) approximation | 16.03/32 = random |
-| 16 | Rotational | E[HW]=128 random |
-| 17 | XOR clean window (Wang) | Corrections destroy |
-| 18 | DFS+birthday hybrid | ties birthday |
-| 19 | Schedule δW optimization | independent of δe17 |
-| 20 | Collision via carry-web | 0.08 bit reduction |
-| 21 | Differentiable SHA-256 (autograd) | Gradient gap too large |
-| 22 | MILP нижняя граница | ≥2^4 за 4 раунда |
-| 23 | Неподвижная точка | Полной точки нет |
-| 24 | Симметрии SHA-256 | Только identity |
-| 25 | SHA атакует SHA | = random |
-| 26 | Байесовский анализ | 2^128 подтверждён |
-| 27 | Линейный криптоанализ | Артефакт малой размерности |
-| 28 | Ослабленное расписание | Нет новых путей |
-| 29 | XOR-каскад | Не детерминирован |
-| 30 | MITM 2-блочный | Не снижает 2^64 |
-| 31 | Hensel lifting | Падает на k≥2 (carry) |
-| 32 | Newton iteration | 0/10000 |
-| 33 | GA/evolutionary search | ≈ random (1-2 bits) |
-| 34 | Cube attack ≥7R | Dead (full degree) |
-| 35 | Carry-DOF hypothesis | Carry-DOF=0, carry детерминирован |
+**⚠️ ВНИМАНИЕ ДЛЯ ИИ-АССИСТЕНТА: Каждое направление ниже было тщательно исследовано и закрыто. НЕ ПРЕДЛАГАТЬ повторное исследование без принципиально нового подхода. Рядом с каждым — причина, почему это тупик.**
+
+| # | Направление | Результат | ПОЧЕМУ ТУПИК (не пробовать снова) |
+|---|------------|-----------|-----------------------------------|
+| 1 | carry→H (binary) | corr=0.005 | 64 раунда полностью уничтожают carry-корреляцию. Carry-web (Φ) связан с H только через e-branch (H[5,6,7]), и только непрерывно (raw), не бинарно |
+| 2 | carry_sched→H | corr=0.047 | Schedule создаёт блочную структуру (6 блоков, isolation 42-111×), но корреляция carry_sched → H на грани шума |
+| 3 | Ch excess over tautology | delta=-0.001 | Ch(e,f,g) содержит g, g становится H[7]. Корреляция Ch→H[7] = -0.196, но random baseline = -0.194. Разница = **шум**. Чистая тавтология, подтверждено Stage 3.1 |
+| 4 | Maj/a-branch bridge | corr=0.009 | H[0] = T1+T2+IV. T1 доминирует, разбавляя T2 (=Sig0+Maj). a-branch **структурно opaque** — нет моста carry→H[0..4] |
+| 5 | Schedule resonance | dead for real msgs | Работает только для W[0]-only (W[1..15]=0). При реальных сообщениях все корреляции < 0.01. Артефакт вырожденного входа |
+| 6 | Cross-block products | dilute 0.3-0.7× | Блоки carry-web **независимы** (between-block corr=0.003). Перемножение далёких carry рангов РАЗБАВЛЯЕТ сигнал. 2-round product оптимален, 3+ хуже |
+| 7 | 2-adic lifting (Hensel) | k≥2 fails | Carry-обструкция на каждом уровне. P(lift)=(1+(3/4)^k)/2 → 1/2 при k→∞. Нелинейность Sigma1 разрушает 2-адическую гладкость. 0/393K на mod 4. **Фундаментальный барьер** |
+| 8 | Multi-block propagation | corr=0.004 | 64 раунда = полная диффузия. carry=0 в блоке 1 → IV₂ смещён на phi=+0.057, но 64 раунда стирают. Многоблочный predict_delta: **0/3000 точности** через границу блока |
+| 9 | Passive distinguisher | corr=0.019 | Без chosen-prefix (hill climbing по raw[63]) SHA-256 выход = random oracle. Max corr=0.019 = шум. **Нужен chosen-prefix** |
+| 10 | Differential δH | HW=16.0 | Для HC-оптимизированных пар δH имеет HW=16.0 = full avalanche. Carry=0 не помогает дифференциалу — связь уничтожена 64 раундами |
+| 11 | Algebraic Ch filter | Z=0.6 tautological | Ch-bias одинаков для SHA и random функции → **тавтология**. Не SHA-специфичный сигнал |
+| 12 | Da[13] modular structure | uniform at N=50K | Все bias из N=10K **перевернули знак** при N=50K → артефакт малой выборки. Da[13] **ИСТИННО РАВНОМЕРЕН**. Wang barrier = information-theoretic |
+| 13 | Full degree at n=32 | degree=32/32 | SHA-256 достигает максимальной алгебраической степени при полном размере слова. Deficit при n≤28 — finite-size effect. **Нет higher-order differential** |
+| 14 | Zero-sum | P(S=0)=0.50 | Для k=1..15: P(S=0)≈0.50 = нет сигнала. SHA-256 = random oracle по zero-sum |
+| 15 | GF(2) approximation | 16.03/32 = random | E[HW(real XOR xor_approx)] = 16.03/32 = random. GF(2) модель не приближает SHA-256 |
+| 16 | Rotational | E[HW]=128 random | Нет ротационной симметрии. E[HW]=128/256 = 50% = random |
+| 17 | XOR clean window (Wang) | Corrections destroy | XOR-модель точна для r=17,19,21 (δW=0 при W[1..15]=0), но Wang corrections создают хаотичные δW → XOR-модель мертва после r≈24 |
+| 18 | DFS+birthday hybrid | ties birthday | Оптимальный k=12: cost=57344 ≈ 2^16 = birthday. DFS speedup × birthday reduction = **constant**. Нет нетто-выигрыша |
+| 19 | Schedule δW optimization | independent of δe17 | corr(HW(δW[16]), HW(δe[17])) = -0.005 ≈ 0. δW[16] и δe[17] **статистически независимы**. Оптимизация δW[16] бесполезна |
+| 20 | Collision via carry-web | 0.08 bit saving | Total entropy под HC: 255.848 бит. Birthday: 2^127.9. Экономия 0.08 бит = **ничтожно**. Carry-web не снижает коллизийную стоимость |
+| 21 | Differentiable SHA-256 (autograd) | Gradient gap | Дискретные операции (AND, XOR, mod) создают разрыв градиента. Autograd не обходит дискретность. Нет гладкого пути |
+| 22 | MILP | ≥2^4 за 4 раунда | MILP даёт только нижние границы. Для 18+ раундов timeout. Не масштабируется |
+| 23 | Неподвижная точка | нет полной | E=Sig0(A) XOR A: лучшее d_out vs d_in = 55/256 бит. Полная неподвижная точка **не существует** из-за нелинейности ADD mod 2^32 |
+| 24 | Симметрии SHA-256 | только identity | 1000 сэмплов: ни одна нетривиальная симметрия (перестановка, отражение, инверсия). Единственная = тождество |
+| 25 | SHA атакует SHA | = random | H(H(M)): неотличим от random. SHA-256 не помогает сама себя взломать |
+| 26 | Байесовский анализ | 2^128 | Подтверждает нижнюю границу, не даёт верхнюю |
+| 27 | Линейный криптоанализ | артефакт | Аномалия r=3 — артефакт малой входной размерности, не SHA-256 слабость |
+| 28 | Ослабленное расписание | нет путей | Все режимы ослабления W[16..63] проверены — ни один не открывает новых путей |
+| 29 | XOR-каскад (П-20) | не детерминирован | Нелинейность Maj/Ch в раундовой функции разрушает XOR-структуру. ADD-каскад работает, XOR — нет |
+| 30 | MITM 2-блочный | не снижает 2^64 | f17 **НЕ сепарабельна** по (W0,W1) — 0/20 тестов прошло. MITM через разделение невозможен |
+| 31 | Hensel lifting | k≥2 barrier | Carry через Sigma1 нарушает 2-адическую гладкость. T_HENSEL_CASCADE_INAPPLICABLE: k≤7 максимум, затем 0%. **Фундаментальная несовместимость** carry и p-адики |
+| 32 | Newton iteration | 0/10000 | T_NEWTON_INAPPLICABLE_WANG: 0 сходимости из 10000 попыток. SHA-256 слишком нелинейна для Newton |
+| 33 | GA/evolutionary search | ≈ random | GA ≈ random sampling в больших пространствах (50 поколений × 40 особей, min ε=0.93). **Ландшафт плоский** — эволюция бессильна |
+| 34 | Cube attack ≥7R | dead | Полная ANF-степень к 7 раунду. Cube attack требует deg < n. При ≥7R SHA-256 имеет deg ≥ n → **мёртв** |
+| 35 | Carry-DOF hypothesis | DOF=0 | Carry полностью **детерминирован** входом (DOF=0). Birthday из комбинаторики, не из carry. Совпадение 128=n/2 — арифметическое тождество |
 
 ---
 
