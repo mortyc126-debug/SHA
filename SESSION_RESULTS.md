@@ -366,3 +366,16 @@ SHA-256 (R=64): deficit ≈ 1.4 бит (НЕ 27 как ранее оценива
 
 Дополнительно: image_size ≈ 6.7%, fixed_point = {0} only, non-commutative, non-idempotent.
 Файл: `carry_algebra.py`
+
+### F26: T3 (Nilpotency) ДОКАЗАНА АНАЛИТИЧЕСКИ (+NEW)
+Индукция: после k применений C_y, позиции 0..k-1 = 0. QED.
+Exhaustive verification n=8: confirmed. Файл: `parallel.py`
+
+### F27: Skeleton eigenspace = НЕСТАБИЛЬНЫЙ (артефакт) (+NEW, CLOSED)
+dim колеблется 0-2 в зависимости от N samples. Not real invariant.
+always_one count уменьшается с N → skeleton зависит от выборки.
+Закрыто. Файл: `parallel.py`
+
+### F28: Schedule coupling = LINEAR → MI=0 consistent (+NEW)
+Schedule sig0/sig1 связывают слой 0 со слоями {3,7,10,17,18,19}.
+Всё LINEAR (XOR). Объясняет MI=0 между слоями. Файл: `parallel.py`
