@@ -526,3 +526,22 @@ of diffusion → lower bit-0 code weight. Consistent with T_DEP.
 
 This is a QUANTIFIABLE asymmetry in SHA-256: early message words
 have 28% more diffusion than late words at the bit-0 layer level.
+
+### T10: MAJ accumulator = GROUP (Z/2^n, +) — unique non-trivial (+NEW)
+```
+t=1 OR: commutative, no identity → NOT group
+t=2 MAJ: commutative, identity=0, inverses=YES → GROUP!
+t=3 AND3: commutative, identity=0, inverses=YES → GROUP (trivial)
+```
+MAJ = unique non-trivial threshold accumulator forming a group.
+This GROUP is (Z/2^n, +) — ordinary integer addition mod 2^n.
+T9+T10: MAJ is unique in being nilpotent + associative + group-forming.
+
+### F64: D5=0.493, D6=0.459 at R=20 — ALL random (+NEW)
+T7 extends to at least order 6. All derivatives D2-D6 random at R_full.
+
+### F65: Schedule EQUALIZES word sensitivity (2.02× → 1.06×) (+NEW)
+Bit-0 layer: W[0]=249, W[15]=185 → ratio 2.02×.
+Full hash: W[0]=127.3, W[15]=129.0 → ratio 1.06×.
+Schedule (48 additional rounds of XOR-linear processing) reduces
+asymmetry from 2× to 6%. Schedule = equalizer.
