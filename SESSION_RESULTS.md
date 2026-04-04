@@ -450,3 +450,9 @@ Varied n_msg at fixed n=8:
 Ratio stabilizes at 0.75 for large n_msg.
 Previous R_H=16 was due to coarse measurement (step=4, missed R=12).
 SHA-256: R_H ≈ 12, safety margin = 64/12 ≈ 5.3×.
+
+### F37: R_H = 0.75 × n_msg потому что 6/8 регистров нелинейны (+NEW)
+Ch(e,f,g): 3 NL регистра. Maj(a,b,c): 3 NL регистра. Total: 6/8 = 0.75.
+d и h — только линейные (d+T1, h+...).
+0.75 × n_msg точно совпадает с измерениями для n_msg = 4,8,12,16,24.
+Альтернатива n_msg/√2 ≈ 0.707 менее точна.
