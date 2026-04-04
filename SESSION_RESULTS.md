@@ -379,3 +379,21 @@ always_one count уменьшается с N → skeleton зависит от в
 ### F28: Schedule coupling = LINEAR → MI=0 consistent (+NEW)
 Schedule sig0/sig1 связывают слой 0 со слоями {3,7,10,17,18,19}.
 Всё LINEAR (XOR). Объясняет MI=0 между слоями. Файл: `parallel.py`
+
+### F29: T4 ДОКАЗАНА АНАЛИТИЧЕСКИ (+NEW)
+J[k][j] = ∏_{i=j}^{k-1} y[i]. Строго нижнетреугольная.
+rank = HW(y[0..n-2]). |{y: rank=k}| = 2·C(n-1,k). QED.
+Pointwise verified: n=4,6,8,10 — True для всех y.
+Файл: `T4_proof.py`
+
+### F30: T5 ДОКАЗАНА АНАЛИТИЧЕСКИ (+NEW)
+E_total(a,b,c) = E(a,b) ⊕ E(a+b,c) — следует из ассоциативности сложения.
+Carry correction = 1-cocycle группы (Z/2^n, +) в (GF(2)^n, ⊕).
+Доказательство в 2 строки.
+
+### ИТОГО: 4 из 5 теорем ДОКАЗАНЫ АНАЛИТИЧЕСКИ
+T1: Layer rank = 2R-1 ✓ (IV constraint)
+T2: Deficit ≈ 0.022 bits/round — экспериментально
+T3: Nilpotency ✓ (индукция)
+T4: Binomial rank ✓ (product matrix)
+T5: Cocycle ✓ (ассоциативность)
