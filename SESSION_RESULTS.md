@@ -587,3 +587,19 @@ REVISED: SHA-256 randomness = ROTATION × (Ch/Maj OR Carry).
 Not three independent engines — one essential + two alternatives.
 
 T8 CANDIDATE: Rotation is necessary and sufficient (with any nonlinearity) for BTE randomness.
+
+### F55: Rotation constants determine randomness SPEED, not just coverage (+NEW)
+Wide {1,10,20}/{5,15,25}: D2=0.440 at R=16 (FASTEST)
+SHA-256 {2,13,22}/{6,11,25}: D2=0.300 (MODERATE)
+Minimal {1}/{16}: D2=0.275 (SLOW but still works!)
+
+Coverage speed (steps to reach all 32) does NOT predict D2 speed:
+  SHA-256: 3 steps but D2=0.300
+  Wide: 4 steps but D2=0.440 (FASTER with MORE steps!)
+  Minimal: 16 steps but D2=0.275 (ALMOST same as SHA-256!)
+
+The SPREAD of rotation constants matters more than their coverage speed.
+Evenly distributed rotations = faster mixing = faster randomness.
+SHA-256's rotations are clustered ({2,6} close, {11,13} close) = not optimal.
+
+T8 STRENGTHENED: Rotation is necessary. SPREAD determines speed.
