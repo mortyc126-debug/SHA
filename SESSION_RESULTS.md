@@ -322,3 +322,18 @@ Hash rank per bit-layer = min(n_regs, 2R-1) = 8 (ограничен размер
 Для SHA-256: trajectory layer = 127, hash bit-layer = 8, total hash = 256.
 XL оценки (2^38) были для trajectory-system, не hash-system.
 Файл: `verify_xl.py`
+
+### F21: Квадратичный дефицит = ~13.5% (0.21 бит на уравнение) (+NEW, ВТОРАЯ ТЕОРЕМА)
+Перечислением BTE-4 и BTE-5:
+  n=3,R=6: deficit=7.8% (0.117 bits)
+  n=4,R=8: deficit=13.6% (0.211 bits) 
+  n=5,R=10: deficit=13.5% (0.210 bits) ← СТАБИЛЬНО
+  n=4,R=12: deficit=0.4% (переопределена: n_msg < 2R-1)
+
+Квадратичные Ch/Maj отсекают ~13.5% линейных trajectories.
+Для SHA-256 (127 уравнений × 0.21 бит): ~27 бит дополнительного ограничения.
+Пространство решений: 2^358 вместо 2^385.
+
+Distribution solutions: min=1, max=9 (avg=2.3). НЕ uniform.
+30.8% trajectories имеют ровно 1 solution.
+Файлы: `solutions.py`
