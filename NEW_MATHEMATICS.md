@@ -490,3 +490,25 @@ Both capture DIFFERENT aspects of rotation quality.
 
 Explanation: imbalanced parity → alternating even/odd reach pattern →
 systematic mixing between two halves of Z/32 → maximum mixing speed.
+
+### T9: Threshold Accumulator Classification (НОВАЯ ТЕОРЕМА)
+For threshold-t accumulator f(x,y,c) = 1 iff x+y+c ≥ t:
+```
+t=0: NOT nilpotent, associative, trivial (image=1)
+t=1: NOT nilpotent, NOT associative (OR accumulator)
+t=2: NILPOTENT + ASSOCIATIVE + non-trivial (image=109) ← UNIQUE!
+t=3: NILPOTENT + ASSOCIATIVE + trivial (image=1)
+```
+**t=2 (MAJ/carry) = unique non-trivial nilpotent + associative threshold.**
+This explains WHY mod-2^n addition has special algebraic properties.
+Binary carry (MAJ) is the ONLY threshold accumulator with all three:
+nilpotency (T3), associativity (T5), and rich structure (T4).
+
+### F61: Branch 5 — bit-0 layer code minimum weight = 141 (+NEW)
+SHA-256 bit-0 Jacobian: min row weight = 141, avg = 213.7.
+Random [512,127] code: expected d_min ≈ 200+.
+SHA-256 below random → potential structural weakness in layer code.
+
+### F62: Branch 3 — minimum watershed ≈ round 48 (+NEW)
+From schedule capacity: 32r*-1536 > 0 → r* > 48.
+Can't push watershed below round 48 using schedule kernel alone.
