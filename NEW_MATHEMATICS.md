@@ -598,3 +598,22 @@ Theorem B: D_k(R, M) ≈ 0.5 for all M at R ≥ R_full.
 SUPPORTED experimentally. Combined with F66 (all orders):
 → BTE at R_full = pseudo-random function (all orders, all messages).
 → Birthday bound follows from PRF → collision lower bound.
+
+### THEOREM D: PROOF SKETCH (BTE → PRF → birthday) (+NEW)
+5 steps: degree growth → derivative saturation → M-uniformity → PRF → birthday.
+
+Step 1: degree ≥ 2^{R-2} per round (doubling from Ch/Maj × rotation).
+Step 2: degree >> k → D_k ≈ 0.5 (derivative saturation).
+Step 3: rotation isotropy → uniform over all M.
+Step 4: high-degree + uniform → PRF.
+Step 5: PRF → collision ≥ 2^{hash_bits/2} (standard).
+
+4 GAPS: (1) degree doubling not formally proved, (2) degree→D_k formal,
+(3) isotropy formal, (4) D-wise indep → PRF for structured functions.
+
+SHA-256 at R=64: degree ≥ 2^62 (capped at 2^32 by word size).
+2^32 >> 512 input bits → indistinguishable from random.
+
+### F68: Degree estimate 2^{R-2} per round (+NEW)
+R=3→2, R=8→64, R=16→16384, R=20→262144, R=64→capped at 2^32.
+Degree growth = exponential (doubling). Explains simultaneous D_k transition.
