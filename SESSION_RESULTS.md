@@ -491,3 +491,12 @@ Bridging this gap = the fundamental challenge.
 Next: formalize trajectory-space BTE theory.
 Can we work with trajectory STRUCTURE without knowing M?
 (Like working with eigenspaces without knowing eigenvectors.)
+
+### F42: No layer-by-layer convergence preference (+NEW, CLOSED)
+P(bit1=0 | bit0=0) = 0.499 = random for random pairs. No layer preference.
+
+### F43: BTE UNIFIES Wang chain + carry algebra (+NEW, SYNTHESIS)
+Wang chain = e-convergence tool for R < R_H (uses створочне + schedule).
+Beyond R_H: nonlinearity thermalized → birthday only.
+BTE explains WHY Wang works: controls e during nonlinearity buildup.
+Wang + birthday = BTE-optimal strategy for SHA-256 collision.
