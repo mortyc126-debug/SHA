@@ -536,3 +536,18 @@ Round 1→2: stabilizing (28→17). Round 5+: saturated at ~28 GPK diffs.
 Mechanism: Sig0/Sig1 rotations spread 1 bit to 6 positions → cascade.
 First round after perturbation = maximum amplification = mixing mechanism.
 This is the ATOMIC view of SHA-256 diffusion. Not statistics — exact causes.
+
+### F49: Atomic δGPK: inter-round corr=0.47, per-bit mean=0.50 (+NEW)
+δG consecutive correlation: 0.47 (slight bias, -3% from random).
+δP per-bit: mean = 0.50 ± 0.07 across 50 messages. No universal bias.
+Individual M can have biases 0.30-0.71 at specific bits (M-specific, not universal).
+The 0.71 at bit 5 for one M was M-SPECIFIC, not structural.
+
+### F50: ATOMIC LEVEL SUMMARY (+NEW)
+For ONE specific M: every carry has exact cause (G/P/K).
+Cascade: 1→28× GPK amplification in first round (rotation-driven).
+GPK segments are M-specific fingerprints.
+δGPK patterns: inter-round correlation 0.47 (slight), per-bit random.
+At atomic level: SHA-256 IS deterministic and structured.
+At statistical level: indistinguishable from random (by design).
+The GAP between atomic determinism and statistical randomness = SHA-256's security.
