@@ -474,3 +474,20 @@ L = XOR-SHA (linear, kernel=256). Φ = carry cocycle map (nonlinear, rank=256).
 Verified: 0 violations at R=4,16,64 (8000 tests each).
 Collision = Ψ(M) = C where Ψ = Φ(M)⊕Φ(M⊕δM), C = L(δM).
 Ψ is high-degree (≥3), thermalizes by R=8, indistinguishable from random.
+
+### F41: Carry cocycle = COBOUNDARY (trivial in H¹) (+NEW)
+E(a,b) = (a+b)⊕a⊕b = f(a+b)⊕f(a)⊕f(b) where f=identity.
+Carry is a coboundary → H¹ = 0. Cohomologically trivial.
+No topological information in carry. Expected but now confirmed.
+
+### DIRECTION FOR NEXT SESSION
+BTE Theory lives in TRAJECTORY SPACE (16384 bits), not hash space (256 bits).
+Trajectory has structure (T1: 4 layers × 127). Hash does not (random).
+All output-based tests = random. All internal structure = real.
+
+The gap between internal structure and external randomness = SHA-256's design.
+Bridging this gap = the fundamental challenge.
+
+Next: formalize trajectory-space BTE theory.
+Can we work with trajectory STRUCTURE without knowing M?
+(Like working with eigenspaces without knowing eigenvectors.)
