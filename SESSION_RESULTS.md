@@ -416,3 +416,13 @@ At R=16: still 19% structured (degree-2 component not fully randomized).
 This is the first QUANTITATIVE measure of nonlinearity growth across rounds.
 
 Potential: reduced-round attacks at R≤16 could exploit non-random Hessian.
+
+### F33: Hessian profile ИЗОТРОПНЫЙ — все bits/regs одинаковы (+NEW)
+Все 8 протестированных (bit,reg) комбинаций дают одну и ту же S-кривую.
+Нет слабых бит или регистров. Перемешивание изотропно.
+
+### F34: Hessian growth = S-КРИВАЯ с фазовым переходом R≈12 (+NEW)
+R=2-6: P≈0 (affine). R=8-12: rapid growth. R=12-20: transition. R≥24: random.
+Half-random point R_H ≈ 12 ≈ 2k* (k*=5=log₂32 из методички).
+Не простой экспоненциальный — threshold behavior.
+Потенциально: R_H = новая характеристика BTE класса.
