@@ -560,3 +560,15 @@ Expected for full enumeration: ~2^31 distinct carry paths per hash word.
 Collision = finding M₂ with ANY carry path from the COMPATIBLE SET.
 Not matching M₁'s specific path — finding one of ~2^31 alternatives.
 This "atomic degeneracy" = freedom available for collision search.
+
+### F52: CORRECTION — No per-round carry degeneracy in SHA-256 (+CORRECTION)
+F51's 2^31 was for ARBITRARY (T1,T2). In SHA-256: T2 = fixed by state →
+T1 = a_new - T2 → W[r] = T1 - rest → ALL uniquely determined.
+No carry-level degeneracy per round. The 2^31 was counting (T1,T2)
+decompositions, not valid SHA-256 computations.
+Real degeneracy = 2^256 messages per hash (message-level, not atomic).
+
+### F53: Collision = two rivers flowing into one lake (+NEW, GEOMETRIC)
+Each M = unique atomic path (river). Hash = common destination (lake).
+Paths are DIFFERENT everywhere except final state.
+Watershed (boundary between convergent paths) = unsolved geometric problem.
