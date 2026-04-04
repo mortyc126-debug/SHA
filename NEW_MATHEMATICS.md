@@ -512,3 +512,17 @@ SHA-256 below random → potential structural weakness in layer code.
 ### F62: Branch 3 — minimum watershed ≈ round 48 (+NEW)
 From schedule capacity: 32r*-1536 > 0 → r* > 48.
 Can't push watershed below round 48 using schedule kernel alone.
+
+### F63: Bit-0 code weight decreases with word index (+NEW)
+```
+W[0]: avg weight=249, W[7]: 214, W[11]: 199, W[15]: 185
+Early: 240, Mid: 213, Late: 188
+```
+Weakest bit: W[11] bit 19 (weight=141). Strongest: W[1] bit 22 (weight=285).
+Ratio strongest/weakest = 2.02×.
+
+Explanation: later message words enter computation later → fewer rounds
+of diffusion → lower bit-0 code weight. Consistent with T_DEP.
+
+This is a QUANTIFIABLE asymmetry in SHA-256: early message words
+have 28% more diffusion than late words at the bit-0 layer level.
