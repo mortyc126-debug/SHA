@@ -511,3 +511,9 @@ Collision search in kernel: 0/100K (insufficient samples for 2^64 hash).
 e-control: δT1 depends on W → W can compensate → Wang chain works.
 a-control: δT2 depends on (a,b,c) not W → W can't compensate → harder.
 BTE theory explains WHY Wang targets e not a: structural asymmetry.
+
+### F46: Maj unanimous bits = exactly 25% = random at all rounds (+NEW)
+8.0/32 unanimous (a=b=c) at every round. = random P(all same) = 1/4.
+Ch also 25% unanimous. No exploitable alignment.
+Round 0 IV: 8 fixed unanimous positions [3,9,13,15,20,23,27,29].
+No way to increase unanimity → Maj stays 75% quadratic always.
