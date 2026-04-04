@@ -402,3 +402,17 @@ T5: Cocycle ✓ (ассоциативность)
 HW = 127.8/256. Max bit bias = 0.038. GF(2) rank = 256/256 (full).
 Cocycle + nilpotency don't produce observable macro-effect.
 Micro-structure (T3-T5) is real but erased by composition over 64 rounds.
+
+### F32: Hessian profile — nonlinearity grows gradually (+NEW, SIGNIFICANT)
+P(H[j][k]=1) по раундам:
+  R=2: 0.000 (affine, consistent with F5)
+  R=4: 0.006 (nearly affine)
+  R=8: 0.090 (degree-2 emerging)
+  R=16: 0.406 (not yet random — 19% below 0.5!)
+  R=64: 0.513 (random)
+
+SHA-256 nonlinearity grows GRADUALLY, not suddenly.
+At R=16: still 19% structured (degree-2 component not fully randomized).
+This is the first QUANTITATIVE measure of nonlinearity growth across rounds.
+
+Potential: reduced-round attacks at R≤16 could exploit non-random Hessian.
