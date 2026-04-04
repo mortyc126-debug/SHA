@@ -611,3 +611,10 @@ Best: Primes {3,5,7}/{11,13,17} D2=0.472.
 Q_avg correlation = -0.159 (no signal).
 Number of rotation constants may matter more than their spacing.
 6 constants consistently faster than 2 constants.
+
+### F57: Overlap model INCOMPLETE — overlap ≠ D2 speed (+NEW)
+SHA-256 overlap=0.34, Primes overlap=0.34 → but D2 different (0.427 vs 0.472).
+Adjacent overlap=0.59 (highest) → D2=0.350 (medium). No clear correlation.
+Rotation → D2 relationship is MORE COMPLEX than simple overlap.
+Likely: specific POSITION of overlaps matters, not just count.
+The rotation → randomness formula remains OPEN.
