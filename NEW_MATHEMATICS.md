@@ -467,3 +467,15 @@ corr(log(n_rots),D2) = 0.626 ← BEST
 ```
 Логарифмическая зависимость. Удвоение числа ротаций → +const D2.
 Для fixed n_rots=6: 30% variance от конкретных значений (Primes=0.472 > Adjacent=0.350).
+
+### F59: ROTATION ENTROPY = best predictor of D2 speed (r=0.852!) (+NEW, KEY)
+```
+corr(entropy, D2@R=16) = 0.852 (BEST of all metrics!)
+corr(log(n)*entropy, D2) = 0.851
+```
+Entropy = how uniformly rotations are distributed across Z/32.
+Adjacent(ent=1.0)→D2=0.350. SHA-256(ent=2.6)→D2=0.427. 
+
+**T8 FORMULA**: D2_speed ∝ entropy(rotation_distribution).
+Higher entropy = more uniform spread = faster randomness.
+This is the QUANTITATIVE answer to "what makes good rotations."
