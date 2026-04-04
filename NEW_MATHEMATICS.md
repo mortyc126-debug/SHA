@@ -545,3 +545,25 @@ Bit-0 layer: W[0]=249, W[15]=185 → ratio 2.02×.
 Full hash: W[0]=127.3, W[15]=129.0 → ratio 1.06×.
 Schedule (48 additional rounds of XOR-linear processing) reduces
 asymmetry from 2× to 6%. Schedule = equalizer.
+
+### UNIFYING PRINCIPLE: MAJ = median → ALL carry theorems (+NEW, FUNDAMENTAL)
+Binary carry function MAJ(x,y,c) = median of {x,y,c}.
+
+Median has 4 properties:
+  1. Symmetric → commutative addition
+  2. Monotone → unidirectional carry propagation  
+  3. Self-dual → balanced carry distribution
+  4. Idempotent → f(x,x,c)=x → kill mechanism
+
+Implications:
+  Property 4 → T3 (nilpotent)
+  Linearization of 4 → T4 (binomial rank)
+  Properties 1+4 → T5 (cocycle/associative)
+  T3+T5 unique → T9 (unique threshold)
+  T5 + identity + inverse → T10 (group)
+
+ALL FIVE carry theorems (T3-T5, T9-T10) = consequences of ONE fact:
+  carry = median vote on 3 bits.
+
+This is the DEEPEST result of BTE theory: the entire carry algebra
+reduces to a single concept — the median function.
