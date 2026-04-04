@@ -439,3 +439,14 @@ Hessian transition round R_H = 16 для ВСЕХ 5 конфигураций:
 **ТЕОРЕМА T6 (Hessian Transition)**: R_H ≈ n_msg.
 Нелинейность достигает half-random при числе раундов = числу слов сообщения.
 Для SHA-256: R_H = 16, safety margin = 64/16 = 4×.
+
+### F36: T6 УТОЧНЕНА: R_H ≈ 0.75 × n_msg (не = n_msg) (+CORRECTION)
+Varied n_msg at fixed n=8:
+  n_msg=4: R_H=6 (1.50×)
+  n_msg=8: R_H=8 (1.00×)
+  n_msg=12: R_H=10 (0.83×)
+  n_msg=16: R_H=12 (0.75×)
+  n_msg=24: R_H=18 (0.75×)
+Ratio stabilizes at 0.75 for large n_msg.
+Previous R_H=16 was due to coarse measurement (step=4, missed R=12).
+SHA-256: R_H ≈ 12, safety margin = 64/12 ≈ 5.3×.
