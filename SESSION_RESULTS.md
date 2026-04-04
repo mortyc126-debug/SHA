@@ -397,3 +397,8 @@ T2: Deficit ≈ 0.022 bits/round — экспериментально
 T3: Nilpotency ✓ (индукция)
 T4: Binomial rank ✓ (product matrix)
 T5: Cocycle ✓ (ассоциативность)
+
+### F31: Total carry effect (SHA XOR XOR-SHA) = random (+NEW)
+HW = 127.8/256. Max bit bias = 0.038. GF(2) rank = 256/256 (full).
+Cocycle + nilpotency don't produce observable macro-effect.
+Micro-structure (T3-T5) is real but erased by composition over 64 rounds.
