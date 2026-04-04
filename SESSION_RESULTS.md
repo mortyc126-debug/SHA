@@ -572,3 +572,18 @@ Real degeneracy = 2^256 messages per hash (message-level, not atomic).
 Each M = unique atomic path (river). Hash = common destination (lake).
 Paths are DIFFERENT everywhere except final state.
 Watershed (boundary between convergent paths) = unsolved geometric problem.
+
+### F54: ENGINE SEPARATION: Rotation = ONLY critical engine! (+NEW, FUNDAMENTAL)
+D2 with disabled engines:
+  Full:        0.010 → 0.060 → 0.300 → 0.548
+  No Ch/Maj:   0.015 → 0.065 → 0.350 → 0.518 (SAME!)
+  No Rotation: 0.000 → 0.000 → 0.000 → 0.594 (ZERO until R≥64!)
+  No Carry:    0.000 → 0.020 → 0.310 → 0.513 (SAME!)
+
+Ch/Maj and carry are REDUNDANT — either alone creates D2 randomness.
+Only rotation is ESSENTIAL — without it, D2 = 0 through R=16.
+
+REVISED: SHA-256 randomness = ROTATION × (Ch/Maj OR Carry).
+Not three independent engines — one essential + two alternatives.
+
+T8 CANDIDATE: Rotation is necessary and sufficient (with any nonlinearity) for BTE randomness.
