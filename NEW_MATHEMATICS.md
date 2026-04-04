@@ -3,6 +3,47 @@
 
 ---
 
+## ДЛЯ СЛЕДУЮЩЕГО ИИ: ПРОЧИТАЙ ЭТО ПЕРВЫМ
+
+### Что это
+Новая математика (BTE Theory) для SHA-256. Создана с нуля за одну сессию.
+Проходит через все 64 раунда без барьеров. 12 теорем, 71 факт.
+НЕ является атакой. Является **описательной теорией** с направлением к provable security.
+
+### Чего НЕ ДЕЛАТЬ (закрытые тупики)
+1. **НЕ** искать скалярные инварианты — all → random к раунду 8
+2. **НЕ** использовать дифференциалы — δ → random после 6 раундов
+3. **НЕ** пробовать GF(2) или Z/2^32 отдельно — каждый видит только 50%
+4. **НЕ** искать межслойную корреляцию на output — MI = 0 (F18, verified N=200K)
+5. **НЕ** пробовать carry rank saturation — was artifact of small N (F10 correction)
+6. **НЕ** пробовать preimage clustering — was linear grid artifact (F7)
+7. **НЕ** искать stable Jacobian eigenspaces — state-dependent, not universal (F14-15)
+8. **НЕ** пробовать skeleton eigenvalues — unstable, N-dependent artifact (F27)
+9. **НЕ** пробовать P-mask correlation — zero signal (F16)
+10. **НЕ** пробовать residues mod p — all uniform (F4 in SESSION_RESULTS)
+11. **НЕ** пробовать layered collision — layers independent (F18)
+12. **НЕ** пробовать structured pair correlation — MI = finite-sample bias (F18 detector)
+13. **НЕ** ожидать carry degeneracy per round — T2 fixes T1 → W unique (F52)
+
+### Подводные камни
+- **Sample size**: rank = min(N, ncols). Always check N > expected rank. (Caused F10 false alarm.)
+- **Message generator**: ensure truly random M (not linear formula). (Caused BTE-8 false collision.)
+- **Finite-sample MI**: I(X;Y) > 0 always for finite N. Noise ≈ (K-1)²/(2N ln2). Compare with control.
+- **Local vs global**: Jacobian properties are STATE-DEPENDENT. Always test multiple M.
+- **Bit-0 != all bits**: bit-0 layer rank = 127, but hash rank per layer = only 8.
+
+### Что РАБОТАЕТ (BTE инструменты)
+- **L ⊕ Φ decomposition**: SHA-256(M) = L(M) ⊕ Φ(M). Verified 0 violations, all rounds.
+- **Створочне backward**: from hash → recover a[57..64]. Free, exact.
+- **Layer unfolding**: 512 = 4×127 + 4. Universal for BTE class.
+- **Carry algebra**: T3-T5 (nilpotent, binomial rank, cocycle). All proven.
+- **Engine separation**: rotation = critical, Ch/Maj and carry = redundant (T8).
+- **Hessian profile**: S-curve, all derivatives simultaneous at R_full (T7, F66).
+- **Degree Fibonacci**: d(r) = Fibonacci(r) ≈ φ^r. Ceiling at round 15 (T11).
+- **Monomial spread**: T12 explains R_full = max(coverage, n_msg, log_φ(n)) + 2.
+
+---
+
 ## ЧАСТЬ 1: ОПРЕДЕЛЕНИЯ
 
 ### 1.1 Bi-Temporal Element (BTE)
@@ -684,6 +725,26 @@ FORMAL proof still needs: density filling argument (the +2) + step 4 rigor.
 But the LOGICAL CHAIN is complete.
 
 ---
+
+## ВСЕ 12 ТЕОРЕМ (сводка)
+
+| # | Название | Формула | Статус |
+|---|---------|---------|--------|
+| T1 | Layer Rank | rank(Layer(0)) = 2R-1 | **ДОКАЗАНА** (IV constraint) |
+| T2 | Quadratic Deficit | ~0.022 bits/round | Experimental |
+| T3 | Carry Nilpotency | C_y^n(x) = 0 | **ДОКАЗАНА** (induction) |
+| T4 | Carry Binomial Rank | \|{y:rank=k}\| = 2·C(n-1,k) | **ДОКАЗАНА** (product matrix) |
+| T5 | Carry Cocycle | E(a,b,c) = E(a,b)⊕E(a+b,c) | **ДОКАЗАНА** (associativity) |
+| T6 | Hessian Transition | R_H ≈ 0.75·n_msg | Experimental (6/8 NL regs) |
+| T7 | Full Randomization | R_full = n_msg + 2 | **DERIVED** from T11+T12 |
+| T8 | Rotation Necessity | Rotation = only critical engine | Experimental (engine separation) |
+| T9 | Threshold Classification | MAJ = unique nilpotent+associative+nontrivial | Experimental (verified t=0..3) |
+| T10 | MAJ = Group | (Z/2^n, +) forms group via MAJ accumulator | Experimental |
+| T11 | Fibonacci Degree | d(r) = Fib(r) ≈ φ^r ≈ 1.618^r | **ДОКАЗАНА** (Ch/Maj recurrence) |
+| T12 | Monomial Spread | Full spread at R = max(coverage, n_msg, log_φ(n)) + 2 | Proof sketch |
+
+**Unifying principle**: MAJ = median of 3 bits → T3, T4, T5, T9, T10.
+**Logical chain**: MAJ → carry algebra → degree growth → monomial spread → PRF → birthday.
 
 ## ФИНАЛЬНЫЙ ИТОГ СЕССИИ
 
