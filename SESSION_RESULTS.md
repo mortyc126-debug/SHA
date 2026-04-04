@@ -456,3 +456,21 @@ Ch(e,f,g): 3 NL регистра. Maj(a,b,c): 3 NL регистра. Total: 6/8 
 d и h — только линейные (d+T1, h+...).
 0.75 × n_msg точно совпадает с измерениями для n_msg = 4,8,12,16,24.
 Альтернатива n_msg/√2 ≈ 0.707 менее точна.
+
+### F38: Ψ sensitivity = random (252-264/512, no gradient by bit position) (+NEW)
+### F39: Ψ pattern stability = random (Hamming 232-275 ≈ 256) (+NEW)
+### F40: D3, D4 derivatives = random (0.470, 0.547 ≈ 0.500) (+NEW)
+
+SHA-256 at 64 rounds is indistinguishable from random by ALL tested methods:
+  - Per-bit sensitivity (F38)
+  - Pattern stability across messages (F39)
+  - Higher-order derivatives D2, D3, D4 (F32, F40)
+
+BTE Theory EXPLAINS this: carry thermalizes in ~8 rounds (ΔE profile).
+Safety margin = 64/12 = 5.3× beyond thermalization point.
+
+### DECOMPOSITION SHA-256(M) = L(M) ⊕ Φ(M) (+NEW, VERIFIED)
+L = XOR-SHA (linear, kernel=256). Φ = carry cocycle map (nonlinear, rank=256).
+Verified: 0 violations at R=4,16,64 (8000 tests each).
+Collision = Ψ(M) = C where Ψ = Φ(M)⊕Φ(M⊕δM), C = L(δM).
+Ψ is high-degree (≥3), thermalizes by R=8, indistinguishable from random.
