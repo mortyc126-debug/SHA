@@ -315,3 +315,10 @@ BTE + ★-algebra + Bit-Layer Decomposition + BTE Class Theory = полный с
 **Межслойная корреляция = 0** — слои независимы на выходе. Birthday оптимален для per-layer подхода. Преимущество возможно ТОЛЬКО через нелинейные cross-layer свойства, невидимые якобиану.
 
 Следующий шаг: **доказать** теорему 2R-1 аналитически и найти формулу числа "чистых" слоёв.
+
+### F20: Различие trajectory rank vs hash rank (+NEW, КРИТИЧЕСКОЕ)
+Теорема 2R-1 = rank по TRAJECTORY (все промежуточные states).
+Hash rank per bit-layer = min(n_regs, 2R-1) = 8 (ограничен размером выхода).
+Для SHA-256: trajectory layer = 127, hash bit-layer = 8, total hash = 256.
+XL оценки (2^38) были для trajectory-system, не hash-system.
+Файл: `verify_xl.py`
