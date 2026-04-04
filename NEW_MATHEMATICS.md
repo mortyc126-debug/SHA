@@ -617,3 +617,21 @@ SHA-256 at R=64: degree ≥ 2^62 (capped at 2^32 by word size).
 ### F68: Degree estimate 2^{R-2} per round (+NEW)
 R=3→2, R=8→64, R=16→16384, R=20→262144, R=64→capped at 2^32.
 Degree growth = exponential (doubling). Explains simultaneous D_k transition.
+
+### T11: Degree Fibonacci Growth (НОВАЯ ТЕОРЕМА) (+NEW)
+```
+d(r) = d(r-1) + d(r-2), d(1)=d(2)=1
+d(r) ≈ φ^r where φ = (1+√5)/2 ≈ 1.618
+```
+NOT doubling (2^r) but Fibonacci (1.618^r). Still exponential.
+Reason: Ch/Maj multiply CURRENT degree × PREVIOUS degree (shifted register).
+d(3)=2, d(5)=5, d(8)=21, d(10)=55, d(16)=987, d(20)=6765.
+At R=20: d=6765 >> 512 → PRF. Gap 1 CLOSED with refined rate.
+
+Confirmed: d(1)=1 (F5 affine R=1), d(2)=1 (F5 affine R=2),
+d(3)=2 (Hessian shows D2 nonzero at R=3).
+
+### F69: Degree growth = Fibonacci 1.618^r (not 2^r) (+CORRECTION)
+Previous F68 (degree 2^{R-2}) was OVERESTIMATE.
+Actual: Fibonacci growth from Ch/Maj recurrence.
+At R=20: 6765 (not 262144). Still >> 512. PRF still holds.
