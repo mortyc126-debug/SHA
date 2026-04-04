@@ -567,3 +567,23 @@ ALL FIVE carry theorems (T3-T5, T9-T10) = consequences of ONE fact:
 
 This is the DEEPEST result of BTE theory: the entire carry algebra
 reduces to a single concept — the median function.
+
+### F66: D2-D10 ALL random at R=20. Transition doesn't grow with k! (+NEW)
+```
+D_2:  random at R≈16
+D_4:  random at R≈20
+D_6:  random at R≈20
+D_8:  random at R≈20
+D_10: random at R≈20 (N=4, very small sample)
+```
+Transition round does NOT increase with derivative order k.
+ALL orders k=2..10 transition in window R=16-20.
+This supports Theorem A: R_full universal across ALL orders.
+
+### BTE SECURITY CONJECTURE (formalized)
+For BTE with parameters satisfying conditions 1-6:
+  collision_cost ≥ 2^{hash_bits/2 - ε}
+for negligible ε.
+
+Conditions: R≥R_full, coverage, entropy, capacity, nonlinearity, two-branch.
+SHA-256 satisfies all 6. Conjecture → collision ≥ 2^{128-ε}.
