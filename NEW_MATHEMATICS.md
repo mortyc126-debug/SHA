@@ -454,3 +454,16 @@ Ch contributes through DEGREE, not through carry structure.
 Теория **не атакует** SHA-256 (birthday confirmed optimal). Она создаёт **фундамент** для: provable security, optimal hash design, cross-hash analysis.
 
 **Зародыш вырос в теорию. Теория готова расти дальше.**
+
+---
+
+## ДОПОЛНЕНИЕ: Новые результаты (продолжение сессии)
+
+### F58: D2 ∝ log(n_rotations) — лучший fit (+NEW)
+```
+corr(n_rots, D2)    = 0.472
+corr(n_rots², D2)   = 0.280
+corr(log(n_rots),D2) = 0.626 ← BEST
+```
+Логарифмическая зависимость. Удвоение числа ротаций → +const D2.
+Для fixed n_rots=6: 30% variance от конкретных значений (Primes=0.472 > Adjacent=0.350).
