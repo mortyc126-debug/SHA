@@ -500,3 +500,14 @@ Wang chain = e-convergence tool for R < R_H (uses створочне + schedule)
 Beyond R_H: nonlinearity thermalized → birthday only.
 BTE explains WHY Wang works: controls e during nonlinearity buildup.
 Wang + birthday = BTE-optimal strategy for SHA-256 collision.
+
+### F44: Schedule kernel: 160 free bits (SHA-256), 40 bits (BTE-8) (+NEW)
+δW[last_k_rounds]=0 has kernel dim = n_msg × n - rank(schedule_Jacobian).
+SHA-256: 160 free bits for δW[53..63]=0.
+BTE-8: 40 bits for δW[13..15]=0, 8 bits for δW[9..15]=0.
+Collision search in kernel: 0/100K (insufficient samples for 2^64 hash).
+
+### F45: a-branch convergence fundamentally harder than e-branch (+NEW, INSIGHT)
+e-control: δT1 depends on W → W can compensate → Wang chain works.
+a-control: δT2 depends on (a,b,c) not W → W can't compensate → harder.
+BTE theory explains WHY Wang targets e not a: structural asymmetry.
