@@ -358,3 +358,11 @@ q ≈ 0.022 бит/раунд (стабильно для n=3,4,5).
 SHA-256 (R=64): deficit ≈ 1.4 бит (НЕ 27 как ранее оценивалось).
 Предыдущая оценка F21 (27 бит) НЕВЕРНА — умножали по equations, не rounds.
 Реальное пространство решений Layer 0: 2^{383.6} вместо 2^{385}.
+
+### F25: Carry Operator — три свойства ПОДТВЕРЖДЕНЫ (+NEW, ТРЕТЬЯ-ПЯТАЯ ТЕОРЕМЫ)
+**Теорема 3 (Nilpotency)**: C_y^n(x) = 0 для всех x,y. Max depth = n. Все n=4..16.
+**Теорема 4 (Binomial Rank)**: |{y: rank(J_{C_y})=k}| = 2·C(n-1,k). Exact для n=4,6,8.
+**Теорема 5 (Cocycle)**: carry(x+y+z) = carry(x,y) XOR carry(x+y,z). 0 violations на n=4,6,8,10.
+
+Дополнительно: image_size ≈ 6.7%, fixed_point = {0} only, non-commutative, non-idempotent.
+Файл: `carry_algebra.py`
