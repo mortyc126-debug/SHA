@@ -551,3 +551,12 @@ GPK segments are M-specific fingerprints.
 At atomic level: SHA-256 IS deterministic and structured.
 At statistical level: indistinguishable from random (by design).
 The GAP between atomic determinism and statistical randomness = SHA-256's security.
+
+### F51: ATOMIC DEGENERACY: ~2^31 distinct carry paths per hash word (+NEW)
+For fixed a[64]: 5376 distinct carry vectors from 10000 random (T1,T2) decompositions.
+Hash does NOT determine carry structure. ~50% of (T1,T2) pairs give unique carry.
+Expected for full enumeration: ~2^31 distinct carry paths per hash word.
+
+Collision = finding M₂ with ANY carry path from the COMPATIBLE SET.
+Not matching M₁'s specific path — finding one of ~2^31 alternatives.
+This "atomic degeneracy" = freedom available for collision search.
