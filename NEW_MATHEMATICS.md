@@ -635,3 +635,19 @@ d(3)=2 (Hessian shows D2 nonzero at R=3).
 Previous F68 (degree 2^{R-2}) was OVERESTIMATE.
 Actual: Fibonacci growth from Ch/Maj recurrence.
 At R=20: 6765 (not 262144). Still >> 512. PRF still holds.
+
+### F70: Degree ceiling at R≈15 (Fib(15)=610 > n=512) (+NEW)
+Fibonacci degree hits n=512 at round 15. After: degree = maximum.
+Monomial space at degree n/2=256: C(512,256) ≈ 2^507 (nearly full 2^512).
+→ Degree-512 function + monomial spread → random.
+
+### GAPS 2+3 MERGE: "Rotation creates monomial spread" (+NEW)
+Gap 2 (degree→D_k) + Gap 3 (isotropy) = ONE gap:
+  "Rotation distributes monomials uniformly across ANF."
+Evidence: F67 (D2 uniform), T8 (rotation necessary), F59 (entropy=speed).
+If rotation spreads monomials → D_k≈0.5 for all k, all M → PRF → birthday.
+
+THEOREM D GAPS STATUS:
+  Gap 1: CLOSED (T11: Fibonacci growth)
+  Gap 2+3: MERGED (rotation monomial spread — single remaining core gap)
+  Gap 4: PRF for structured functions (secondary, likely follows from 2+3)
