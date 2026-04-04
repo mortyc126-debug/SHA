@@ -603,3 +603,11 @@ Evenly distributed rotations = faster mixing = faster randomness.
 SHA-256's rotations are clustered ({2,6} close, {11,13} close) = not optimal.
 
 T8 STRENGTHENED: Rotation is necessary. SPREAD determines speed.
+
+### F56: Q_min ANTI-correlates with D2 speed! (-0.659) (+NEW, SURPRISING)
+Rotation min-distance negatively correlates with randomness speed.
+Wider spacing → SLOWER randomness. Counter to hypothesis.
+Best: Primes {3,5,7}/{11,13,17} D2=0.472.
+Q_avg correlation = -0.159 (no signal).
+Number of rotation constants may matter more than their spacing.
+6 constants consistently faster than 2 constants.
