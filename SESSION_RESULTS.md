@@ -337,3 +337,13 @@ XL оценки (2^38) были для trajectory-system, не hash-system.
 Distribution solutions: min=1, max=9 (avg=2.3). НЕ uniform.
 30.8% trajectories имеют ровно 1 solution.
 Файлы: `solutions.py`
+
+### F22: Дефицит НЕ компаундится — только Layer 0 (+NEW)
+Cumulative trajectory projection:
+  bits 0: 28319 trajs, deficit 13.6%
+  bits 0-1: 65536 trajs, deficit 0% (full rank, every msg unique)
+  bits 0-2: 65536, deficit 0%
+  bits 0-3: 65536, deficit 0%
+Квадратичный дефицит существует ТОЛЬКО на Layer 0.
+При добавлении Layer 1 все сообщения уникальны → дефицит поглощён.
+Для SHA-256: общий дефицит ≈ 27 бит (только Layer 0), не 108.
