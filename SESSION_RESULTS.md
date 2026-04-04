@@ -529,3 +529,10 @@ SHA-256: R_full=20=16+4(≈+2 for n=32 scaling). Safety margin = 64/20 = 3.2×.
 **THEOREM T7**: R_full = n_msg + 2. After R_full rounds: ALL algebraic derivatives
 random → function indistinguishable from random → birthday = optimal.
 The +2 likely from degree-2 Ch/Maj needing 2 rounds to fully propagate.
+
+### F48: Atomic cascade: 1→28 GPK amplification in one round (+NEW, FUNDAMENTAL)
+Round 0→1: 1 GPK diff → 28 (G:11 + P:17). 1 carry → 14. 28× amplification.
+Round 1→2: stabilizing (28→17). Round 5+: saturated at ~28 GPK diffs.
+Mechanism: Sig0/Sig1 rotations spread 1 bit to 6 positions → cascade.
+First round after perturbation = maximum amplification = mixing mechanism.
+This is the ATOMIC view of SHA-256 diffusion. Not statistics — exact causes.
