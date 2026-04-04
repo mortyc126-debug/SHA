@@ -479,3 +479,14 @@ Adjacent(ent=1.0)→D2=0.350. SHA-256(ent=2.6)→D2=0.427.
 **T8 FORMULA**: D2_speed ∝ entropy(rotation_distribution).
 Higher entropy = more uniform spread = faster randomness.
 This is the QUANTITATIVE answer to "what makes good rotations."
+
+### F60: Parity IMBALANCE predicts D2 speed (r=0.789!) (+NEW)
+corr(parity_imbalance, D2) = 0.789.
+All-odd (Primes) or all-even (VeryWide) = FAST (D2≈0.45-0.47).
+Balanced parity (SHA-256, Adjacent) = SLOWER (D2≈0.35-0.43).
+
+Combined model: entropy (0.852) + parity_imbalance (0.789).
+Both capture DIFFERENT aspects of rotation quality.
+
+Explanation: imbalanced parity → alternating even/odd reach pattern →
+systematic mixing between two halves of Z/32 → maximum mixing speed.
