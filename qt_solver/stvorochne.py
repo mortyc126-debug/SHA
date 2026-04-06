@@ -1,14 +1,19 @@
 """
-Stvorochne Elimination algebra for SHA-256 cryptanalysis.
+Створочне Elimination algebra for SHA-256 cryptanalysis.
 
 Key identity (verified with 0/3050 violations):
     e[r] = a[r] + a[r-4] - T2[r-1]  (mod 2^32)
 
-where T2[r] = Sigma0(a[r]) + Maj(a[r], a[r-1], a[r-2])
+Where T2[r] = Sigma0(a[r]) + Maj(a[r], a[r-1], a[r-2])
+            = Sigma0(a[r]) + Maj(a[r], a[r-1], a[r-2])
 
-This means the e-register is FULLY DETERMINED by the a-sequence.
+This means the e-register is FULLY DETERMINED by the a-sequence!
 SHA-256's 8 registers reduce to a single sequence {a[r]}.
 State = {a[r], a[r-1], a[r-2], a[r-3]} = 128 bits (not 256).
+
+Important: The створочне is a mod-2^32 identity, NOT a GF(2) identity.
+When linearizing, the Jacobian captures first-order effects which ARE
+valid in GF(2). So the linearized system works correctly.
 """
 
 from qt_solver.sha256_traced import (
@@ -17,6 +22,9 @@ from qt_solver.sha256_traced import (
     sha256_compress, sha256_compress_traced,
 )
 from qt_solver.gf2 import gf2_kernel, gf2_gaussian_eliminate
+
+
+import random
 
 
 def _T2(a_r, a_rm1, a_rm2):
