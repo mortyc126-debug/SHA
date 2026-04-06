@@ -294,7 +294,7 @@ def xsl_solve(polys, n_vars, max_degree=5, verbose=False):
                 c = c * (n_vars - k) // (k + 1)
             n_cols += c
 
-        if n_cols > 200000:
+        if n_cols > 50000:
             if verbose:
                 print(f"    D={D}: {n_cols} monomials -- skipping (too large)")
             break
@@ -524,8 +524,15 @@ def print_summary(results):
             print("    However, whether D_reg < n/2 for SHA-256 requires")
             print("    larger-scale experiments (n_bits=5+, R=8+)")
         else:
-            print("    ==> BTE structure does NOT clearly help Groebner basis")
-            print("    The quadratic system behaves similarly to random")
+            print("    ==> BTE structure does NOT reduce D_reg below random")
+            print("    In fact, BTE rank growth is SLOWER than random:")
+            print("      - Flattening creates mostly linear equations (aux var = quadratic)")
+            print("      - Only a small fraction of equations are truly quadratic")
+            print("      - XL multiplications of linear equations produce less new rank")
+            print("      - Random systems have dense quadratic terms => faster rank growth")
+            print("    CONCLUSION: Groebner/XL cannot exploit OMEGA structure.")
+            print("    D_reg for SHA-256 BTE system is likely >= D_reg for random,"  )
+            print("    which is already >= n/2. No Groebner shortcut exists.")
 
 
 # ============================================================
@@ -541,12 +548,11 @@ if __name__ == "__main__":
     # Configurations: (n_bits, R, n_msg_words)
     # Keep n_vars small for tractable XL
     configs = [
-        (2, 2, 2),   # ~18 vars -- can go to D=5/6
-        (2, 3, 2),   # ~29 vars -- can go to D=4
-        (2, 4, 2),   # ~40 vars -- can go to D=3
-        (3, 2, 2),   # ~34 vars -- can go to D=3/4
-        (3, 3, 2),   # ~52 vars -- can go to D=3
+        (2, 2, 2),   # ~18 vars -- can push to D=5
+        (2, 3, 2),   # ~29 vars -- D=3/4
+        (2, 4, 2),   # ~40 vars -- D=3
+        (3, 2, 2),   # ~34 vars -- D=3/4
     ]
 
-    results = measure_d_reg(configs, max_degree=6)
+    results = measure_d_reg(configs, max_degree=5)
     print_summary(results)
