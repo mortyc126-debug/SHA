@@ -51,13 +51,14 @@ def compute_a_sequence(msg, R=64):
 # ------------------------------------------------------------------ #
 def recover_e_from_a(a_seq, R=64):
     """
-    Given the a-sequence, recover the e-sequence using the stvorochne identity:
+    Given the a-sequence, recover the e-sequence using the створочне identity:
         e[r] = a[r] + a[r-4] - T2[r-1]  (mod 2^32)
 
     For rounds r >= 5 the identity applies directly.
     For r = 0..4 we bootstrap from IV.
 
     Returns list of R+1 uint32 (e[0] = IV[4], e[r] for r=1..R).
+    Verifies against actual SHA-256 trace when called from verify_e_recovery.
     """
     # We need a[-4..-1] which come from the IV shift registers.
     # Before round 0 the state is (a,b,c,d,e,f,g,h) = IV.
@@ -123,7 +124,9 @@ def recover_full_state(a_seq, R=64):
 
     Shift relations:
         b[r] = a[r-1], c[r] = a[r-2], d[r] = a[r-3]
-        e[r] from stvorochne identity
+    Створочне:
+        e[r] = a[r] + a[r-4] - T2[r-1]
+    Then:
         f[r] = e[r-1], g[r] = e[r-2], h[r] = e[r-3]
 
     Returns list of R+1 tuples (a, b, c, d, e, f, g, h).
@@ -186,13 +189,12 @@ def build_a_only_system(R, msg, verbose=True):
     Build OMEGA linearized system using ONLY a-variables (no separate e-variables).
 
     Variable layout:
-        - bits 0..511: message bits (W[0..15] x 32 bits)
-        - bits 512..512+R*32-1: delta-a bits (a[1..R] x 32 bits)
+        - Message variables: 512 (W[0..15] x 32 bits)
+        - State variables: only delta_a[1..R] x 32 bits (not delta_e!)
+        - e equations eliminated via створочне
         Total = 512 + R*32 variables
 
-    We build the Jacobian by finite differences: flip each variable bit,
-    observe change in hash bits. The stvorochne identity means we do NOT
-    need separate e-variables because e is determined by a.
+    Linearize around known trace. Solve and report alpha-kernel.
 
     Returns dict with kernel info.
     """
@@ -292,11 +294,11 @@ def build_a_only_system(R, msg, verbose=True):
 # ------------------------------------------------------------------ #
 def compare_variable_counts(R_values=None, msg=None, verbose=True):
     """
-    Compare standard OMEGA (msg + a + e variables) vs stvorochne OMEGA (msg + a only).
+    Compare standard OMEGA (msg + a + e variables) vs
+    Створочне OMEGA (msg + a only).
 
-    Reports variable reduction, equation reduction, and alpha-kernel dimensions.
+    Reports: variable reduction, equation reduction, alpha-kernel (must match).
     """
-    import random
 
     if R_values is None:
         R_values = [4, 8, 12, 16]
@@ -307,7 +309,7 @@ def compare_variable_counts(R_values=None, msg=None, verbose=True):
 
     if verbose:
         print("=" * 70)
-        print("Variable Count Comparison: Standard OMEGA vs Stvorochne OMEGA")
+        print("Variable Count Comparison: Standard OMEGA vs Створочне OMEGA")
         print("=" * 70)
         print(f"{'R':>4} | {'Std vars':>10} {'Stv vars':>10} {'Reduction':>10} | "
               f"{'Std alpha':>10} {'Stv alpha':>10} {'Match':>6}")
@@ -355,7 +357,7 @@ def compare_variable_counts(R_values=None, msg=None, verbose=True):
         print(f"Variable reduction per round: {R_values[0] if R_values else '?'} -> "
               f"{results[0]['reduction'] if results else '?'} "
               f"(eliminated {results[0]['reduction']} e-variables)" if results else "")
-        print(f"Stvorochne eliminates R*32 variables (the entire e-sequence).")
+        print(f"Створочне eliminates R*32 variables (the entire e-sequence).")
 
     return results
 
@@ -375,7 +377,7 @@ def a_sequence_recurrence(msg, R=64):
 
     Substituting shift relations:
         b[r]=a[r-1], c[r]=a[r-2], d[r]=a[r-3]
-        e[r] from stvorochne: e[r] = a[r] + a[r-4] - T2[r-1]
+        e[r] from створочне: e[r] = a[r] + a[r-4] - T2[r-1]
         f[r]=e[r-1], g[r]=e[r-2], h[r]=e[r-3]
 
     So a[r+1] depends on a[r], a[r-1], ..., a[r-7] (and K[r], W[r]).
@@ -451,48 +453,96 @@ def a_sequence_recurrence(msg, R=64):
 # Main verification
 # ------------------------------------------------------------------ #
 if __name__ == '__main__':
-    import random
+    print("=" * 72)
+    print("СТВОРОЧНЕ ELIMINATION — Full Verification Suite")
+    print("=" * 72)
 
     rng = random.Random(42)
     msg = [rng.randint(0, MASK32) for _ in range(16)]
 
-    print("=" * 60)
-    print("Stvorochne Elimination Verification")
-    print("=" * 60)
-
-    # 1. Compute a-sequence
-    print("\n[1] Compute a-sequence")
+    # ------------------------------------------------------------------
+    # [1] compute_a_sequence
+    # ------------------------------------------------------------------
+    print("\n[1] compute_a_sequence")
+    print("-" * 60)
     a_seq = compute_a_sequence(msg, 64)
-    print(f"  a[0]={hex(a_seq[0])}, a[1]={hex(a_seq[1])}, ..., a[64]={hex(a_seq[64])}")
-    print(f"  Length: {len(a_seq)}")
+    print(f"  a[0]  = {a_seq[0]:#010x}  (IV[0])")
+    print(f"  a[1]  = {a_seq[1]:#010x}")
+    print(f"  a[64] = {a_seq[64]:#010x}")
+    print(f"  Length: {len(a_seq)} (R+1 = 65)")
 
-    # 2. Recover e from a
-    print("\n[2] Recover e-sequence from a-sequence")
-    v = verify_e_recovery(msg, 64, verbose=True)
-    assert v == 0, f"e-recovery failed with {v} violations"
+    # ------------------------------------------------------------------
+    # [2] recover_e_from_a — bulk verification (replicating 0/3050)
+    # ------------------------------------------------------------------
+    print("\n[2] recover_e_from_a — bulk identity verification")
+    print("-" * 60)
+    total_violations = 0
+    total_checks = 0
+    N_MSGS = 50
+    for seed in range(N_MSGS):
+        rng2 = random.Random(seed)
+        m = [rng2.randint(0, MASK32) for _ in range(16)]
+        v = verify_e_recovery(m, R=64, verbose=False)
+        total_violations += v
+        total_checks += 65
+    print(f"  {N_MSGS} random messages, R=64: "
+          f"{total_violations}/{total_checks} violations")
+    assert total_violations == 0, "створочне identity violated!"
 
-    # 3. Recover full state
-    print("\n[3] Recover full state from a-sequence")
-    v = verify_full_state(msg, 64, verbose=True)
-    assert v == 0, f"full-state recovery failed with {v} violations"
+    # ------------------------------------------------------------------
+    # [3] recover_full_state — all 8 registers from a alone
+    # ------------------------------------------------------------------
+    print("\n[3] recover_full_state — all 8 registers from a-sequence")
+    print("-" * 60)
+    total_violations = 0
+    total_checks = 0
+    for seed in range(10):
+        rng2 = random.Random(seed)
+        m = [rng2.randint(0, MASK32) for _ in range(16)]
+        v = verify_full_state(m, R=64, verbose=False)
+        total_violations += v
+        total_checks += 65
+    print(f"  10 random messages, R=64: "
+          f"{total_violations}/{total_checks} state tuples checked")
+    assert total_violations == 0, "full-state recovery failed!"
 
-    # 4. Build a-only system (small R for speed)
-    print("\n[4] Build a-only system")
+    # ------------------------------------------------------------------
+    # [4] build_a_only_system — створочне OMEGA
+    # ------------------------------------------------------------------
+    print("\n[4] build_a_only_system — створочне OMEGA (a-only)")
+    print("-" * 60)
     for R in [4, 8]:
         print(f"\n  --- R={R} ---")
         result = build_a_only_system(R, msg, verbose=True)
 
-    # 5. Compare variable counts
-    print("\n[5] Compare variable counts")
-    results = compare_variable_counts([4, 8, 12, 16], msg, verbose=True)
+    # ------------------------------------------------------------------
+    # [5] compare_variable_counts
+    # ------------------------------------------------------------------
+    print("\n[5] compare_variable_counts")
+    print("-" * 60)
+    results = compare_variable_counts([4, 8, 12, 16], msg=msg, verbose=True)
     for r in results:
-        assert r['match'], f"Alpha-kernel mismatch at R={r['R']}"
+        assert r['match'], f"Alpha-kernel mismatch at R={r['R']}!"
+    print("  All alpha-kernel dimensions match.")
 
-    # 6. a-sequence recurrence
-    print("\n[6] a-sequence recurrence")
-    v = a_sequence_recurrence(msg, 64)
-    assert v == 0, f"Recurrence verification failed with {v} violations"
+    # ------------------------------------------------------------------
+    # [6] a_sequence_recurrence — 8th-order recurrence
+    # ------------------------------------------------------------------
+    print("\n[6] a_sequence_recurrence — SHA-256 as 8th-order recurrence")
+    print("-" * 60)
+    v = a_sequence_recurrence(msg, R=64)
+    assert v == 0, f"Recurrence verification failed with {v} violations!"
 
-    print("\n" + "=" * 60)
+    # ------------------------------------------------------------------
+    # Summary
+    # ------------------------------------------------------------------
+    print("\n" + "=" * 72)
     print("ALL VERIFICATIONS PASSED")
-    print("=" * 60)
+    print("=" * 72)
+    print()
+    print("Key results:")
+    print("  - створочне identity: e[r] = a[r] + a[r-4] - T2[r-1]  (mod 2^32)")
+    print(f"  - Verified on {N_MSGS * 65} round-checks with 0 violations")
+    print("  - Full 8-register state recoverable from a-sequence alone")
+    print("  - Variable reduction: R*32 e-variables eliminated")
+    print("  - Alpha-kernel preserved (identical to standard OMEGA)")
