@@ -25485,44 +25485,7 @@ SHA-256 = термостат + расширитель. Birthday = оптимал
 
 ---
 
-### ЧАСТЬ 1: АРХИТЕКТУРА SHA-256
-
-#### 1.1 Базовая структура
-
-SHA-256 compression: msg (512 бит) → hash (256 бит). 64 раунда.
-
-Каждый раунд:
-```
-T1[r] = h[r] + Σ₁(e[r]) + Ch(e[r],f[r],g[r]) + K[r] + W[r]
-T2[r] = Σ₀(a[r]) + Maj(a[r],b[r],c[r])
-a[r+1] = T1[r] + T2[r]
-e[r+1] = d[r] + T1[r]
-Shift: b←a, c←b, d←c, f←e, g←f, h←g
-```
-
-8 регистров (a,b,c,d,e,f,g,h), 32 бита каждый.
-Shift structure: b[r]=a[r-1], c[r]=a[r-2], d[r]=a[r-3], f[r]=e[r-1], g[r]=e[r-2], h[r]=e[r-3].
-
-#### 1.2 Три компонента
-
-1. **LINEAR**: Σ₀, Σ₁ (rotations), σ₀, σ₁ (schedule rotations), XOR, shift register — всё GF(2)-linear.
-2. **NLF (NonLinear Functions)**: Ch(e,f,g) = e&f ⊕ ~e&g (MUX), Maj(a,b,c) = ab⊕ac⊕bc (majority vote). Degree 2 в GF(2).
-3. **CARRY**: mod 2^32 addition (7 additions per round). Создаёт vertical bit coupling через MAJ chain.
-
-#### 1.3 Schedule
-
-W[0..15] = msg (входные слова). W[16..63] = рекуррентность:
-```
-W[i] = σ₁(W[i-2]) + W[i-7] + σ₀(W[i-15]) + W[i-16]
-```
-Schedule = **биекция** на msg space (rank 512). Schedule backward: W[48..63] → W[0..15] за O(1) через mod 2^32 вычитание (точная инверсия).
-
-#### 1.4 Створочне тождество
-
-```
-e[r] = a[r] + a[r-4] - T2[r-1]   (mod 2^32)
-```
-Верифицировано 0/3050 нарушений. Следствие: e-последовательность полностью определяется a-последовательностью. SHA-256 = одна 8-порядковая рекуррентность в {a[r]}.
+*Архитектура SHA-256 (раундовая функция, schedule, створочне тождество) — см. Раздел 225, Часть 1.*
 
 ---
 
